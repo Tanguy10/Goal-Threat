@@ -37,7 +37,7 @@ GT(n, r) = max( go_alone(n, r),
 - **Truth Zone** — zones close to goal where shooting is the optimal action (recursion base case).
 - **`A(r)`** — a simple model of how players reposition after a pass (defenders drop toward the
   ball–goal line, receiver moves to the ball, the three nearest attackers advance).
-- The recursion depth is **capped at 2 passes** for tractability and realism.
+- The recursion depth is **capped at 2 passes** for Computational matters.
 
 Evaluation uses the **Metrica Sports** tracking dataset, which is independent from the StatsBomb
 data used to train the pass model.
