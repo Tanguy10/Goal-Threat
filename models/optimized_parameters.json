@@ -1,0 +1,10 @@
+{
+    "sigma_close": 0.05,
+    "sigma_trajectory": 0.12,
+    "sigma_angle": 1.0471975511965976,
+    "distance_weight": 0.3,
+    "angle_weight": 0.25,
+    "close_density_weight": 0.2,
+    "trajectory_density_weight": 0.25,
+    "direct_shot_bonus": 0.1
+}
