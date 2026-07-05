@@ -10,13 +10,13 @@ from config import MODELS_DIR, PROCESSED_DIR, FIGURES_DIR
 
 def load_shot_data(csv_path):
     """
-    Charge et filtre uniquement les données de tirs du CSV
+    Load and keep only the shot rows from the CSV
     """
-    # Charger le CSV
+    # Load the CSV
     df = pd.read_csv(csv_path)
     
-    # Filtrer uniquement les lignes contenant des tirs
-    # Ajuster ce filtre selon la structure de votre CSV
+    # Keep only the rows containing shots
+    # Adjust this filter depending on your CSV structure
     shots_df = df[df['tir_observe'] == 1].copy()
     
     print(f"Total d'entrées: {len(df)}, Nombre de tirs: {len(shots_df)}")
@@ -24,12 +24,12 @@ def load_shot_data(csv_path):
 
 def extract_features_from_shot_df(shot_df):
     """
-    Extrait les informations nécessaires pour la prédiction
+    Extract the information needed for the prediction
     """
     features = []
     
     for idx, row in shot_df.iterrows():
-        # Ignore les lignes sans xG_tir
+        # Skip rows without xG_tir
         if pd.isna(row['xG_tir']):
             continue
 
@@ -53,17 +53,17 @@ def extract_features_from_shot_df(shot_df):
 
 def objective_function(params, features):
     """
-    Fonction à minimiser: erreur entre prédictions et xG réels
+    Function to minimize: error between predictions and actual xG
     """
-    # Décomposer tous les paramètres
+    # Unpack all parameters
     sigma_close, sigma_trajectory, sigma_angle, \
     distance_weight, angle_weight, close_density_weight, trajectory_density_weight, \
     direct_shot_bonus = params
     
-    # Vérifier que la somme des poids est 1
+    # Check that the sum of the weights is 1
     weights_sum = distance_weight + angle_weight + close_density_weight + trajectory_density_weight
     if not np.isclose(weights_sum, 1.0, atol=0.01):
-        # Pénalité importante si les poids ne somment pas à 1
+        # Large penalty if the weights do not sum to 1
         return 1000.0
     
     predictor = GoAloneSimplePredictor(
@@ -95,20 +95,20 @@ def objective_function(params, features):
         actual_xgs.append(feature['actual_xg'])
         predicted_xgs.append(predicted_xg)
     
-    # Calculer l'erreur quadratique moyenne
+    # Compute the mean squared error
     mse = mean_squared_error(actual_xgs, predicted_xgs)
     return mse
 
 def optimize_parameters(features, initial_params=None):
     """
-    Optimise tous les paramètres pour minimiser l'erreur
+    Optimize all parameters to minimize the error
     """
     if initial_params is None:
-        # Valeurs initiales par défaut
+        # Default initial values
         initial_params = (
-            0.05,     # sigma_close - différent
-            0.12,     # sigma_trajectory - différent
-            np.pi/3,  # sigma_angle - différent
+            0.05,     # sigma_close - different
+            0.12,     # sigma_trajectory - different
+            np.pi/3,  # sigma_angle - different
             0.30,     # etc...
             0.25,
             0.20,
@@ -117,16 +117,16 @@ def optimize_parameters(features, initial_params=None):
         )
 
     
-    # Bornes pour les paramètres
+    # Bounds for the parameters
     bounds = [
-        (0.01, 0.5),     # sigma_close: valeurs positives, relativement petites
-        (0.01, 0.5),     # sigma_trajectory: valeurs positives, relativement petites
-        (np.pi/12, np.pi/2),  # sigma_angle: entre 15 et 90 degrés
-        (0.1, 0.6),      # distance_weight: poids raisonnable
-        (0.1, 0.6),      # angle_weight: poids raisonnable
-        (0.1, 0.6),      # close_density_weight: poids raisonnable
-        (0.1, 0.6),      # trajectory_density_weight: poids raisonnable
-        (0.0, 0.2)       # direct_shot_bonus: petit bonus
+        (0.01, 0.5),     # sigma_close: positive, relatively small values
+        (0.01, 0.5),     # sigma_trajectory: positive, relatively small values
+        (np.pi/12, np.pi/2),  # sigma_angle: between 15 and 90 degrees
+        (0.1, 0.6),      # distance_weight: reasonable weight
+        (0.1, 0.6),      # angle_weight: reasonable weight
+        (0.1, 0.6),      # close_density_weight: reasonable weight
+        (0.1, 0.6),      # trajectory_density_weight: reasonable weight
+        (0.0, 0.2)       # direct_shot_bonus: small bonus
     ]
     
     print(f"Début de l'optimisation avec valeurs initiales:")
@@ -139,13 +139,13 @@ def optimize_parameters(features, initial_params=None):
     print(f"- trajectory_density_weight: {initial_params[6]:.4f}")
     print(f"- direct_shot_bonus: {initial_params[7]:.4f}")
     
-    # Utiliser un algorithme d'optimisation globale pour éviter les minima locaux
+    # Use a global optimization algorithm to avoid local minima
     result = minimize(
         objective_function,
         initial_params,
         args=(features,),
         bounds=bounds,
-        method='L-BFGS-B',  # Ou essayer 'SLSQP' qui gère mieux les contraintes
+        method='L-BFGS-B',  # Or try 'SLSQP' which handles constraints better
     )
     
     if result.success:
@@ -168,7 +168,7 @@ def optimize_parameters(features, initial_params=None):
         return initial_params
 
 def main():
-    # Chemin vers votre base de données
+    # Path to your database
     shot_database_path = str(PROCESSED_DIR / "shot_opportunities_database.csv")
     
     print("Chargement des données de tirs...")
@@ -182,7 +182,7 @@ def main():
     print("Optimisation des paramètres...")
     optimal_params = optimize_parameters(features)
     
-    # Créer un prédicteur avec les paramètres optimisés
+    # Create a predictor with the optimized parameters
     optimized_predictor = GoAloneSimplePredictor(
         normalized_coords=True,
         sigma_close=optimal_params[0],
@@ -195,7 +195,7 @@ def main():
         direct_shot_bonus=optimal_params[7]
     )
     
-    # Visualiser les résultats
+    # Visualize the results
     actual_xgs = [f['actual_xg'] for f in features]
     predicted_xgs = [optimized_predictor.predict_success_probability(
         f['player_x'], f['player_y'], f['defenders_coords'], 
@@ -213,7 +213,7 @@ def main():
     plt.savefig(str(FIGURES_DIR / 'optimization_results_full.png'))
     plt.show()
     
-    # Sauvegarder les paramètres optimisés dans un fichier
+    # Save the optimized parameters to a file
     params_dict = {
         'sigma_close': float(optimal_params[0]),
         'sigma_trajectory': float(optimal_params[1]),

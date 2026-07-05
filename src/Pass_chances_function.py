@@ -18,28 +18,28 @@ import optuna
 from config import MODELS_DIR, STATSBOMB_360_DIR
 
 def objective_features(trial):
-    """Fonction objectif pour optimiser les hyperparamètres de features"""
+    """Objective function to optimize the feature hyperparameters"""
     
-    # Suggérer des valeurs pour chaque hyperparamètre
+    # Suggest values for each hyperparameter
     sigma = trial.suggest_float('sigma', 0.01, 0.1)
     seuil_trajectoire = trial.suggest_float('seuil_trajectoire', 0.005, 0.05)
 
     
     try:
-        # Recréer les données avec ces paramètres
+        # Recreate the data with these parameters
         data = create_passing_database(
             sigma = sigma,
             seuil_trajectoire=seuil_trajectoire,
-            max_matches=50  # Échantillon pour accélérer
+            max_matches=50  # Sample to speed things up
         )
         
-        # Entraîner modèle rapidement
+        # Train the model quickly
         X = data[['x_passeur', 'y_passeur', 'x_cible', 'y_cible', 
                  'nb_adv_proches_depart', 'nb_adv_trajectoire',
                  'nb_adv_proches_arrivee', 'nb_coequipiers_proches_arrivee']]
         y = data['succès']
         
-        # Cross-validation rapide
+        # Quick cross-validation
         from sklearn.model_selection import cross_val_score
         from sklearn.ensemble import RandomForestClassifier
         
@@ -50,11 +50,11 @@ def objective_features(trial):
         
     except Exception as e:
         print(f"Erreur avec paramètres: {e}")
-        return 0.5  # Score neutre si erreur
+        return 0.5  # Neutral score if error
 
 def densite_adversaires_ponderee(x_cible, y_cible, adv_positions, sigma=0.05):
     """
-    Calcule une densité d'adversaires avec décroissance gaussienne
+    Compute a density of opponents with Gaussian decay
     """
     if len(adv_positions) == 0:
         return 0
@@ -62,14 +62,14 @@ def densite_adversaires_ponderee(x_cible, y_cible, adv_positions, sigma=0.05):
     cible = np.array([x_cible, y_cible])
     distances = np.linalg.norm(adv_positions - cible, axis=1)
     
-    # Fonction gaussienne : plus on est proche, plus le poids est important
+    # Gaussian function: the closer, the larger the weight
     weights = np.exp(-(distances**2) / (2 * sigma**2))
     
     return np.sum(weights)
 
 def densite_adversaires_inverse(x_cible, y_cible, adv_positions, alpha=1.0):
     """
-    Densité avec décroissance en puissance inverse
+    Density with inverse-power decay
     """
     if len(adv_positions) == 0:
         return 0
@@ -77,10 +77,10 @@ def densite_adversaires_inverse(x_cible, y_cible, adv_positions, alpha=1.0):
     cible = np.array([x_cible, y_cible])
     distances = np.linalg.norm(adv_positions - cible, axis=1)
     
-    # Éviter division par zéro
+    # Avoid division by zero
     distances = np.maximum(distances, 0.01)
     
-    # Poids inversement proportionnel à la distance
+    # Weight inversely proportional to the distance
     weights = 1 / (distances**alpha)
     
     return np.sum(weights)
@@ -111,61 +111,61 @@ def get_zone(x, y, x_divisions=15, y_divisions=10):
 
 def diff_distance_joueurs_proches(x_cible, y_cible, adv_positions, teammate_positions, x_passeur, y_passeur):
     """
-    Calcule la différence entre la distance du défenseur le plus proche et celle du coéquipier
-    le plus proche, divisée par la longueur de la passe.
+    Compute the difference between the distance of the closest defender and that of the closest
+    teammate, divided by the pass length.
     
-    Une valeur positive signifie que le coéquipier est plus proche que le défenseur (situation favorable).
-    Une valeur négative signifie que le défenseur est plus proche (situation défavorable).
+    A positive value means the teammate is closer than the defender (favorable situation).
+    A negative value means the defender is closer (unfavorable situation).
     
     Args:
-        x_cible, y_cible: Coordonnées du point de réception de la passe
-        adv_positions: Array de coordonnées des adversaires
-        teammate_positions: Array de coordonnées des coéquipiers
-        x_passeur, y_passeur: Coordonnées du point de départ de la passe
+        x_cible, y_cible: Coordinates of the pass reception point
+        adv_positions: Array of opponent coordinates
+        teammate_positions: Array of teammate coordinates
+        x_passeur, y_passeur: Coordinates of the pass starting point
         
     Returns:
-        float: Différence de distance normalisée
+        float: Normalized distance difference
     """
-    # Distance de la passe (pour normalisation)
+    # Pass distance (for normalization)
     pass_distance = np.sqrt((x_cible - x_passeur)**2 + (y_cible - y_passeur)**2)
     if pass_distance == 0:
-        return 0  # Éviter division par zéro
+        return 0  # Avoid division by zero
     
-    # Point cible
+    # Target point
     cible = np.array([x_cible, y_cible])
     
-    # Trouver le défenseur le plus proche
+    # Find the closest defender
     if len(adv_positions) > 0:
         adv_distances = np.linalg.norm(adv_positions - cible, axis=1)
         min_adv_distance = np.min(adv_distances)
     else:
         print("⚠️ Aucun adversaire trouvé")
-        min_adv_distance = 1.0  # Valeur par défaut si aucun adversaire
+        min_adv_distance = 1.0  # Default value if no opponent
     
-    # Trouver le coéquipier le plus proche
+    # Find the closest teammate
     if len(teammate_positions) > 0:
         teammate_distances = np.linalg.norm(teammate_positions - cible, axis=1)
         min_teammate_distance = np.min(teammate_distances)
     else:
         print("⚠️ Aucun coéquipier trouvé")
-        min_teammate_distance = 1.0  # Valeur par défaut si aucun coéquipier
+        min_teammate_distance = 1.0  # Default value if no teammate
     
-    # Calculer la différence normalisée
-    # Positif: coéquipier plus proche, Négatif: défenseur plus proche
+    # Compute the normalized difference
+    # Positive: teammate closer, Negative: defender closer
     return (min_adv_distance - min_teammate_distance) / pass_distance
 
-# Fonction utilitaire : calcul de la distance euclidienne
+# Utility function: Euclidean distance computation
 def distance(p1_x, p1_y, p2_x, p2_y):
     return np.sqrt((p2_x - p1_x)**2 + (p2_y - p1_y)**2)
 
 def nb_adv_proches_coords(x_passeur, y_passeur, adv_positions, seuil_proche=0.05):
-    """Version améliorée qui accepte directement les coordonnées"""
+    """Improved version that accepts coordinates directly"""
     passeur = np.array([x_passeur, y_passeur])
     distances = np.linalg.norm(adv_positions - passeur, axis=1)
     return np.sum(distances < seuil_proche)
 
 def nb_adv_trajectoire_coords(x_passeur, y_passeur, x_cible, y_cible, adv_positions, seuil_trajectoire=0.02):
-    """Version améliorée qui accepte directement les coordonnées"""
+    """Improved version that accepts coordinates directly"""
     passeur = np.array([x_passeur, y_passeur])
     cible = np.array([x_cible, y_cible])
     
@@ -259,10 +259,10 @@ def analyze_passing_success(data):
     # Feature engineering
     print("\n=== Feature Engineering ===")
 
-    # Sélection features et label
+    # Feature and label selection
     features = ['x_passeur', 'y_passeur', 'x_cible', 'y_cible',
             'nb_adv_proches_depart', 'nb_adv_trajectoire',
-            'nb_adv_proches_arrivee', 'nb_coequipiers_proches_arrivee' ,'diff_distance_normalisee' # Nouvelles features
+            'nb_adv_proches_arrivee', 'nb_coequipiers_proches_arrivee' ,'diff_distance_normalisee' # New features
             ]
     
     # Make sure all features exist in data
@@ -276,13 +276,13 @@ def analyze_passing_success(data):
     X_scaled = scaler.fit_transform(X)
     X_scaled = pd.DataFrame(X_scaled, columns=features)
     
-    # Séparation données
+    # Data split
     X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.25, random_state=42)
     
     print(f"\n=== Model Training ===")
     print(f"Training on {len(X_train)} samples, testing on {len(X_test)} samples")
     
-    # Modèles à tester
+    # Models to test
     models = {
         "LogisticRegression": LogisticRegression(max_iter=1000),
         "RandomForest": RandomForestClassifier(n_estimators=100, random_state=42),
@@ -292,7 +292,7 @@ def analyze_passing_success(data):
     # Store results for comparison
     results = {}
     
-    # Entrainement et évaluation
+    # Training and evaluation
     for name, model in models.items():
         print(f"\nModel: {name}")
         model.fit(X_train, y_train)
@@ -452,7 +452,7 @@ def create_passing_database(three_sixty_folder=str(STATSBOMB_360_DIR), match_ids
                 if 'pass_end_location' in events.columns:
                     pass_events = events[
                         (events['type'].apply(lambda x: x.get('name') if isinstance(x, dict) else x) == 'Pass') & 
-                        (events['pass_end_location'].notna())  # Utiliser pass_end_location au lieu de pass
+                        (events['pass_end_location'].notna())  # Use pass_end_location instead of pass
                     ]
                 else:
                     print(f"⚠️ Le match {current_match_id} ne contient pas de colonne 'pass_end_location', ignoré.")
@@ -482,10 +482,10 @@ def create_passing_database(three_sixty_folder=str(STATSBOMB_360_DIR), match_ids
                     
                     # Extract basic pass information
                     pass_info = {
-                        'succès': 1 if pd.isna(events.loc[_, 'pass_outcome']) else 0,  # pass_outcome au lieu de pass.outcome
+                        'succès': 1 if pd.isna(events.loc[_, 'pass_outcome']) else 0,  # pass_outcome instead of pass.outcome
                         'x_passeur': event['location'][0] / 120,
                         'y_passeur': event['location'][1] / 80,
-                        'x_cible': event['pass_end_location'][0] / 120,  # Accès direct à pass_end_location
+                        'x_cible': event['pass_end_location'][0] / 120,  # Direct access to pass_end_location
                         'y_cible': event['pass_end_location'][1] / 80
                     }
                 
@@ -534,7 +534,7 @@ def create_passing_database(three_sixty_folder=str(STATSBOMB_360_DIR), match_ids
                             )
                         except Exception as e:
                             print(f"Erreur détaillée: {str(e)}")
-                            # Valeurs par défaut en cas d'erreur
+                            # Default values in case of error
                             pass_info['nb_adv_proches_depart'] = 0
                             pass_info['nb_adv_trajectoire'] = 0
                             pass_info['nb_adv_proches_arrivee'] = 0
@@ -594,8 +594,8 @@ def create_passing_database(three_sixty_folder=str(STATSBOMB_360_DIR), match_ids
 
 # Run the analysis if this is the main script
 if __name__ == "__main__":
-    # Choisir ce qu'on veut faire
-    optimize_hyperparams = False  # Mettre à False pour skip l'optimisation
+    # Choose what to do
+    optimize_hyperparams = False  # Set to False to skip the optimization
     
     if optimize_hyperparams:
         print("🔍 Optimisation des hyperparamètres en cours...")
@@ -606,7 +606,7 @@ if __name__ == "__main__":
         print(study.best_params)
         print(f"Meilleur score: {study.best_value:.3f}")
         
-        # Sauvegarder les résultats de l'optimisation
+        # Save the optimization results
         import pickle
         with open(str(MODELS_DIR / "hyperparameter_optimization_results.pkl"), "wb") as f:
             pickle.dump({
@@ -629,7 +629,7 @@ if __name__ == "__main__":
         print("Pour utiliser les hyperparamètres optimisés, relancez le script avec optimize_hyperparams=False")
         print("et modifiez manuellement les paramètres dans create_passing_database()")
     else:
-        # Charger les paramètres optimaux depuis le fichier JSON
+        # Load the optimal parameters from the JSON file
         import json
         import os
         
@@ -640,15 +640,15 @@ if __name__ == "__main__":
             
             print(f"Paramètres chargés: {best_params}")
             
-            # Créer la base de données finale avec les paramètres optimaux
+            # Create the final database with the optimal parameters
             print("Création de la base de données finale avec les paramètres optimaux...")
             final_data = create_passing_database(
                 sigma=best_params['sigma'],
                 seuil_trajectoire=best_params['seuil_trajectoire'],
-                max_matches=None  # Utiliser tous les matchs
+                max_matches=None  # Use all matches
             )
 
-            # Maintenant utiliser analyze_passing_success avec les données optimales
+            # Now use analyze_passing_success with the optimal data
             print("Analyse finale avec les données optimisées...")
             final_model = analyze_passing_success(final_data)
 

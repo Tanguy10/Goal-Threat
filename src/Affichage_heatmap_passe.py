@@ -23,40 +23,40 @@ from Pass_chances_function import (
 )
 
 def create_pitch(ax):
-    """Crée un terrain de football standardisé (proportions normalisées)"""
-    # Terrain (rectangle vert)
+    """Create a standardized football pitch (normalized proportions)"""
+    # Pitch (green rectangle)
     rect = patches.Rectangle((0, 0), 1, 1, linewidth=2, 
                            edgecolor='white', facecolor='#538032', alpha=0.8)
     ax.add_patch(rect)
     
-    # Ligne médiane
+    # Halfway line
     plt.plot([0.5, 0.5], [0, 1], color='white', linewidth=2)
     
-    # Cercle central
+    # Center circle
     circle = plt.Circle((0.5, 0.5), 0.1, color='white', fill=False, linewidth=2)
     ax.add_patch(circle)
     
-    # Surface de réparation (gauche)
+    # Penalty area (left)
     rect = patches.Rectangle((0, 0.3), 0.18, 0.4, linewidth=2, 
                            edgecolor='white', facecolor='none')
     ax.add_patch(rect)
     
-    # Surface de but (gauche)
+    # Goal area (left)
     rect = patches.Rectangle((0, 0.4), 0.06, 0.2, linewidth=2, 
                            edgecolor='white', facecolor='none')
     ax.add_patch(rect)
     
-    # Surface de réparation (droite)
+    # Penalty area (right)
     rect = patches.Rectangle((0.82, 0.3), 0.18, 0.4, linewidth=2, 
                            edgecolor='white', facecolor='none')
     ax.add_patch(rect)
     
-    # Surface de but (droite)
+    # Goal area (right)
     rect = patches.Rectangle((0.94, 0.4), 0.06, 0.2, linewidth=2, 
                            edgecolor='white', facecolor='none')
     ax.add_patch(rect)
     
-    # Ajuster les paramètres du graphique
+    # Adjust the plot parameters
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
     ax.set_xticks([])
@@ -65,13 +65,13 @@ def create_pitch(ax):
     return ax
 
 def plot_pass_success_probability(ax, origin_x, origin_y, target_x, target_y, prob, annotate=True):
-    """Affiche une passe et sa probabilité de réussite"""
-    # Tracer la passe (flèche)
+    """Draw a pass and its success probability"""
+    # Draw the pass (arrow)
     arrow = ax.arrow(origin_x, origin_y, target_x-origin_x, target_y-origin_y, 
                    head_width=0.02, head_length=0.03, fc='black', ec='black',
                    length_includes_head=True, alpha=0.7)
     
-    # Afficher la probabilité
+    # Display the probability
     if annotate:
         mid_x = (origin_x + target_x) / 2
         mid_y = (origin_y + target_y) / 2
@@ -82,7 +82,7 @@ def plot_pass_success_probability(ax, origin_x, origin_y, target_x, target_y, pr
     return arrow
 
 def plot_player(ax, x, y, team='home', label=None):
-    """Affiche un joueur sur le terrain"""
+    """Draw a player on the pitch"""
     if team == 'home':
         color = 'blue'
     elif team == 'away':
@@ -100,15 +100,15 @@ def plot_player(ax, x, y, team='home', label=None):
     return circle
 
 def load_best_hyperparameters():
-    """Charge les hyperparamètres optimisés"""
-    # Si le prédicteur est déjà chargé, utiliser ses paramètres
+    """Load the optimized hyperparameters"""
+    # If the predictor is already loaded, use its parameters
     if 'predictor' in globals() and hasattr(predictor, 'get_optimal_params'):
         params = predictor.get_optimal_params()
         if params:
             print("✅ Hyperparamètres chargés depuis le prédicteur")
             return params
     
-    # Sinon, essayer de charger depuis le fichier
+    # Otherwise, try to load from the file
     try:
         with open(str(MODELS_DIR / "hyperparameter_optimization_results.pkl"), 'rb') as f:
             optuna_results = pickle.load(f)
@@ -133,7 +133,7 @@ def load_best_hyperparameters():
         }
 
 def print_hyperparameters_info():
-    """Affiche les hyperparamètres actuellement utilisés"""
+    """Print the hyperparameters currently in use"""
     params = load_best_hyperparameters()
     
     print("=" * 45)
@@ -147,51 +147,51 @@ def calculate_pass_features(x_passeur, y_passeur, x_cible, y_cible,
                           adv_positions, teammate_positions, 
                           x_divisions=15, y_divisions=10):
     """
-    Calcule toutes les features d'une passe en utilisant les hyperparamètres optimisés par Optuna
+    Compute all features of a pass using the hyperparameters optimized by Optuna
     """
-    # ⭐ CHARGER LES HYPERPARAMÈTRES OPTIMAUX D'OPTUNA
+    # Load Optuna's optimal hyperparameters
     best_params = load_best_hyperparameters()
     
-    # Utiliser les valeurs optimisées ou les paramètres par défaut
+    # Use the optimized values or the default parameters
     sigma_optimal = best_params.get('sigma', 0.05)
     seuil_trajectoire_optimal = best_params.get('seuil_trajectoire', 0.02)
     
-    # ⭐ UTILISER LES HYPERPARAMÈTRES OPTIMAUX
-    # Adversaires proches du départ (densité pondérée avec sigma optimal)
+    # Use the optimal hyperparameters
+    # Opponents near the start (weighted density with optimal sigma)
     nb_adv_proches_depart = densite_adversaires_ponderee(
         x_passeur, y_passeur, adv_positions, 
-        sigma=sigma_optimal  # ← Valeur optimisée par Optuna
+        sigma=sigma_optimal  # ← Value optimized by Optuna
     )
     
-    # Adversaires sur la trajectoire (avec seuil optimal)
+    # Opponents on the trajectory (with optimal threshold)
     nb_adv_trajectoire = nb_adv_trajectoire_coords(
         x_passeur, y_passeur, x_cible, y_cible, adv_positions, 
-        seuil_trajectoire=seuil_trajectoire_optimal  # ← Valeur optimisée par Optuna
+        seuil_trajectoire=seuil_trajectoire_optimal  # ← Value optimized by Optuna
     )
 
-    # Coéquipiers sur la trajectoire
+    # Teammates on the trajectory
     nb_coequipiers_trajectoire = nb_adv_trajectoire_coords(
         x_passeur, y_passeur, x_cible, y_cible, teammate_positions, 
-        seuil_trajectoire=seuil_trajectoire_optimal  # ← Valeur optimisée par Optuna
+        seuil_trajectoire=seuil_trajectoire_optimal  # ← Value optimized by Optuna
     )
     
-    # Adversaires proches de l'arrivée (densité pondérée avec sigma optimal)
+    # Opponents near the target (weighted density with optimal sigma)
     nb_adv_proches_arrivee = densite_adversaires_ponderee(
         x_cible, y_cible, adv_positions, 
-        sigma=sigma_optimal  # ← Valeur optimisée par Optuna
+        sigma=sigma_optimal  # ← Value optimized by Optuna
     )
     
-    # Coéquipiers proches de l'arrivée
+    # Teammates near the target
     nb_coequipiers_proches_arrivee = densite_adversaires_ponderee(
         x_cible, y_cible, teammate_positions, 
-        sigma=sigma_optimal  # ← Valeur optimisée par Optuna
+        sigma=sigma_optimal  # ← Value optimized by Optuna
     )
     diff_distance = diff_distance_joueurs_proches(
         x_cible, y_cible,
         adv_positions, teammate_positions,
         x_passeur, y_passeur
     )
-    # Créer le dictionnaire des features (exactement comme vous l'avez défini)
+    # Create the features dictionary (exactly as you defined it)
     features = {
         'x_passeur': x_passeur,
         'y_passeur': y_passeur,
@@ -206,7 +206,7 @@ def calculate_pass_features(x_passeur, y_passeur, x_cible, y_cible,
     }
     
     return features
-# Import des fonctions depuis Pass_chances_function.py
+# Import the functions from Pass_chances_function.py
 
 def create_situation(situation_name):
     """
@@ -215,110 +215,110 @@ def create_situation(situation_name):
     """
     situations = {
         'aile_droite': {
-            'passeur': (0.65, 0.15),  # Ailier droit plus près de la ligne
+            'passeur': (0.65, 0.15),  # Right winger closer to the line
             'adversaires': np.array([
-                [0.78, 0.25],  # Défenseur latéral
-                [0.75, 0.40],  # Défenseur central
-                [0.60, 0.35],  # Milieu défensif
-                [0.70, 0.15],  # Pressing sur le passeur
-                [0.50, 0.30]   # Milieu opposé
+                [0.78, 0.25],  # Fullback
+                [0.75, 0.40],  # Center-back
+                [0.60, 0.35],  # Defensive midfielder
+                [0.70, 0.15],  # Pressing the passer
+                [0.50, 0.30]   # Opposite midfielder
             ]),
             'coequipiers': np.array([
-                [0.40, 0.50],  # Milieu central
-                [0.55, 0.25],  # Latéral en soutien
-                [0.75, 0.50],  # Attaquant
-                [0.85, 0.30],  # Attaquant en profondeur
-                [0.60, 0.60]   # Ailier opposé
+                [0.40, 0.50],  # Central midfielder
+                [0.55, 0.25],  # Supporting fullback
+                [0.75, 0.50],  # Forward
+                [0.85, 0.30],  # Forward making a run in behind
+                [0.60, 0.60]   # Opposite winger
             ]),
             'title': "Right Wing Attack (5v5)"
         },
         'milieu_terrain': {
-            'passeur': (0.50, 0.50),  # Milieu central
+            'passeur': (0.50, 0.50),  # Central midfielder
             'adversaires': np.array([
-                [0.75, 0.30],  # Défenseur central droit
-                [0.75, 0.70],  # Défenseur central gauche
-                [0.60, 0.40],  # Milieu défensif
-                [0.60, 0.60],  # Milieu relayeur
-                [0.65, 0.50]   # Attaquant replié
+                [0.75, 0.30],  # Right center-back
+                [0.75, 0.70],  # Left center-back
+                [0.60, 0.40],  # Defensive midfielder
+                [0.60, 0.60],  # Box-to-box midfielder
+                [0.65, 0.50]   # Withdrawn forward
             ]),
             'coequipiers': np.array([
-                [0.30, 0.50],  # Milieu défensif
-                [0.40, 0.20],  # Latéral droit
-                [0.40, 0.80],  # Latéral gauche
-                [0.70, 0.35],  # Attaquant droit
-                [0.70, 0.65]   # Attaquant gauche
+                [0.30, 0.50],  # Defensive midfielder
+                [0.40, 0.20],  # Right fullback
+                [0.40, 0.80],  # Left fullback
+                [0.70, 0.35],  # Right forward
+                [0.70, 0.65]   # Left forward
             ]),
             'title': "Midfield Build-up (5v5)"
         },
         'contre_attaque': {
-            'passeur': (0.35, 0.50),  # Milieu récupérateur
+            'passeur': (0.35, 0.50),  # Ball-winning midfielder
             'adversaires': np.array([
-                [0.45, 0.30],  # Défenseur en repli
-                [0.45, 0.70],  # Défenseur en repli
-                [0.30, 0.60],  # Milieu en retard
-                [0.60, 0.45],  # Défenseur central en repli
-                [0.55, 0.55]   # Défenseur en repli déséquilibré
+                [0.45, 0.30],  # Recovering defender
+                [0.45, 0.70],  # Recovering defender
+                [0.30, 0.60],  # Trailing midfielder
+                [0.60, 0.45],  # Recovering center-back
+                [0.55, 0.55]   # Off-balance recovering defender
             ]),
             'coequipiers': np.array([
-                [0.20, 0.40],  # Soutien défensif
-                [0.50, 0.30],  # Ailier droit en course
-                [0.55, 0.70],  # Ailier gauche en course 
-                [0.65, 0.50],  # Attaquant en appel profondeur
-                [0.45, 0.50]   # Soutien offensif
+                [0.20, 0.40],  # Defensive support
+                [0.50, 0.30],  # Right winger on the run
+                [0.55, 0.70],  # Left winger on the run 
+                [0.65, 0.50],  # Forward making a deep run
+                [0.45, 0.50]   # Attacking support
             ]),
             'title': "Fast Counter-Attack (5v5)"
         },
         'surface_reparation': {
-            'passeur': (0.85, 0.20),  # Ailier prêt à centrer
+            'passeur': (0.85, 0.20),  # Winger ready to cross
             'adversaires': np.array([
-                [0.90, 0.25],  # Défenseur proche
-                [0.87, 0.45],  # Défenseur central
-                [0.92, 0.40],  # Défenseur surface
-                [0.80, 0.35],  # Milieu en repli
-                [0.85, 0.60]   # Défenseur opposé
+                [0.90, 0.25],  # Nearby defender
+                [0.87, 0.45],  # Center-back
+                [0.92, 0.40],  # Box defender
+                [0.80, 0.35],  # Recovering midfielder
+                [0.85, 0.60]   # Opposite defender
             ]),
             'coequipiers': np.array([
-                [0.70, 0.15],  # Soutien extérieur
-                [0.80, 0.50],  # Attaquant au second poteau
-                [0.88, 0.35],  # Attaquant au premier poteau
-                [0.75, 0.40],  # Milieu offensif en retrait
-                [0.65, 0.45]   # Milieu en soutien
+                [0.70, 0.15],  # Wide support
+                [0.80, 0.50],  # Forward at the far post
+                [0.88, 0.35],  # Forward at the near post
+                [0.75, 0.40],  # Withdrawn attacking midfielder
+                [0.65, 0.45]   # Supporting midfielder
             ]),
             'title': "In the Opponent's Box (5v5)"
         },
         'relance_basse': {
-            'passeur': (0.08, 0.50),  # Gardien/défenseur central
+            'passeur': (0.08, 0.50),  # Goalkeeper/center-back
             'adversaires': np.array([
-                [0.20, 0.30],  # Premier rideau défensif
-                [0.20, 0.70],  # Premier rideau défensif
-                [0.35, 0.40],  # Second rideau
-                [0.35, 0.60],  # Second rideau
-                [0.25, 0.50]   # Attaquant en pressing
+                [0.20, 0.30],  # First defensive line
+                [0.20, 0.70],  # First defensive line
+                [0.35, 0.40],  # Second line
+                [0.35, 0.60],  # Second line
+                [0.25, 0.50]   # Pressing forward
             ]),
             'coequipiers': np.array([
-                [0.15, 0.30],  # Défenseur central proche
-                [0.15, 0.70],  # Défenseur central opposé
-                [0.25, 0.15],  # Latéral bas
-                [0.25, 0.85],  # Latéral haut
-                [0.30, 0.50]   # Milieu défensif en soutien
+                [0.15, 0.30],  # Nearby center-back
+                [0.15, 0.70],  # Opposite center-back
+                [0.25, 0.15],  # Low fullback
+                [0.25, 0.85],  # High fullback
+                [0.30, 0.50]   # Supporting defensive midfielder
             ]),
             'title': "Build-up from the Back (5v5)"
         },
         'centre_cote': {
-            'passeur': (0.95, 0.15),  # Ailier en position de centrer
+            'passeur': (0.95, 0.15),  # Winger in a crossing position
             'adversaires': np.array([
-                [0.90, 0.20],  # Défenseur en couverture directe
-                [0.85, 0.30],  # Défenseur central proche
-                [0.85, 0.50],  # Défenseur central axial
-                [0.88, 0.70],  # Défenseur latéral opposé
-                [0.75, 0.40]   # Milieu défensif
+                [0.90, 0.20],  # Defender in direct cover
+                [0.85, 0.30],  # Nearby center-back
+                [0.85, 0.50],  # Central center-back
+                [0.88, 0.70],  # Opposite fullback
+                [0.75, 0.40]   # Defensive midfielder
             ]),
             'coequipiers': np.array([
-                [0.75, 0.20],  # Soutien arrière
-                [0.85, 0.40],  # Attaquant premier poteau
-                [0.80, 0.60],  # Attaquant second poteau
-                [0.70, 0.50],  # Milieu entrée de surface
-                [0.90, 0.80]   # Latéral opposé
+                [0.75, 0.20],  # Rear support
+                [0.85, 0.40],  # Near-post forward
+                [0.80, 0.60],  # Far-post forward
+                [0.70, 0.50],  # Midfielder at the edge of the box
+                [0.90, 0.80]   # Opposite fullback
             ]),
             'title': "Cross from the Wing (5v5)"
         }
@@ -328,34 +328,34 @@ def create_situation(situation_name):
 def create_pass_heatmap(origin_x, origin_y, adv_positions, teammate_positions, predictor, 
                        x_divisions=15, y_divisions=10):
     """
-    Version mise à jour utilisant les fonctions de Pass_chances_function.py
+    Updated version using the functions from Pass_chances_function.py
     """
-    # Créer une grille de positions cibles
+    # Create a grid of target positions
     x_grid = np.linspace(0, 1, 30)
     y_grid = np.linspace(0, 1, 20)
     
-    # Initialiser la matrice de probabilités
+    # Initialize the probability matrix
     prob_matrix = np.zeros((len(y_grid), len(x_grid)))
     
-    # Pour chaque position cible possible
+    # For each possible target position
     for i, target_y in enumerate(y_grid):
         for j, target_x in enumerate(x_grid):
-            #Construisons les listes de mes deux équipes à retenir
+            # Build the lists of the two teams to keep
             team_pos = np.array([pos for pos in teammate_positions if distance(pos[0], pos[1], origin_x, origin_y) > 0.005])
             adv_pos = np.array([pos for pos in adv_positions if distance(pos[0], pos[1], origin_x, origin_y) > 0.005])
 
-            # Calculer toutes les features avec les fonctions existantes
+            # Compute all features with the existing functions
             features = calculate_pass_features(
                 origin_x, origin_y, target_x, target_y,
                 adv_pos, team_pos,
                 x_divisions, y_divisions
             )
             
-            # Créer un DataFrame avec les features
+            # Create a DataFrame with the features
             feature_df = pd.DataFrame([features])
             
-            # Prédire la probabilité
-            prob = predictor.predict_proba(feature_df)[0, 1]  # Probabilité classe positive
+            # Predict the probability
+            prob = predictor.predict_proba(feature_df)[0, 1]  # Positive class probability
             prob_matrix[i, j] = prob
     
     return x_grid, y_grid, prob_matrix
@@ -364,19 +364,19 @@ def configuration_jeu(idx_frame, csv_home, csv_away):
     df_home = pd.read_csv(csv_home, header=2)
     df_away = pd.read_csv(csv_away, header=2)
 
-    # Filtrer la ligne correspondant à la frame voulue
+    # Filter the row corresponding to the desired frame
     home_row = df_home[df_home['Frame'] == idx_frame]
     away_row = df_away[df_away['Frame'] == idx_frame]
 
     home_pos = []
     away_pos = []
 
-    # Pour chaque joueur home
+    # For each home player
     if not home_row.empty:
         for col in df_home.columns:
             if col.startswith('Player'):
                 col_idx = df_home.columns.get_loc(col)
-                # La colonne Y est juste après
+                # The Y column comes right after
                 if col_idx + 1 < len(df_home.columns):
                     y_col = df_home.columns[col_idx + 1]
                     x = home_row.iloc[0][col]
@@ -384,7 +384,7 @@ def configuration_jeu(idx_frame, csv_home, csv_away):
                     if pd.notna(x) and pd.notna(y):
                         home_pos.append((float(x), float(y)))
 
-    # Pour chaque joueur away
+    # For each away player
     if not away_row.empty:
         for col in df_away.columns:
             if col.startswith('Player'):
@@ -400,11 +400,11 @@ def configuration_jeu(idx_frame, csv_home, csv_away):
 
 def flip_positions(positions: list, pitch_length: float = 1.0, pitch_width: float = 1.0) -> list:
     """
-    Renverse les positions des joueurs sur le terrain selon x et y.
-    positions : liste de tuples (x, y)
-    pitch_length : longueur du terrain (par défaut 1.0)
-    pitch_width  : largeur du terrain (par défaut 1.0)
-    Retourne : liste de tuples (x_flipped, y_flipped)
+    Flips the players' positions on the pitch along x and y.
+    positions : list of (x, y) tuples
+    pitch_length : pitch length (default 1.0)
+    pitch_width  : pitch width (default 1.0)
+    Returns : list of (x_flipped, y_flipped) tuples
     """
     return [(pitch_length - x, pitch_width - y) for x, y in positions]
 
@@ -415,13 +415,13 @@ def plot_situation_heatmap_metrica(attacker_pos, defender_pos, ball_pos, frame_i
     fig, ax = plt.subplots(figsize=figsize)
     create_pitch(ax)
     
-    # Extraire les données
+    # Extract the data
     origin_x, origin_y = ball_pos
     adv_positions = np.array(defender_pos)
     teammate_positions = np.array(attacker_pos)
     
-    # Afficher les joueurs
-    plot_player(ax, origin_x, origin_y, 'home', '10')  # Passeur avec numéro
+    # Display the players
+    plot_player(ax, origin_x, origin_y, 'home', '10')  # Passer with number
     
     for i, (x, y) in enumerate(adv_positions):
         plot_player(ax, x, y, 'away')
@@ -429,7 +429,7 @@ def plot_situation_heatmap_metrica(attacker_pos, defender_pos, ball_pos, frame_i
     for i, (x, y) in enumerate(teammate_positions):
         plot_player(ax, x, y, 'home')
     
-    # Créer et afficher la carte de chaleur
+    # Create and display the heatmap
     x_grid, y_grid, prob_matrix = create_pass_heatmap(
         origin_x, origin_y, adv_positions, teammate_positions, predictor
     )
@@ -438,10 +438,10 @@ def plot_situation_heatmap_metrica(attacker_pos, defender_pos, ball_pos, frame_i
     cmap = LinearSegmentedColormap.from_list('custom', ['red', 'yellow', 'green'], N=100)
     contour = ax.contourf(X, Y, prob_matrix, levels=50, cmap=cmap, alpha=0.6)
     
-    # Ajouter des contours pour plus de clarté
+    # Add contours for clarity
     ax.contour(X, Y, prob_matrix, levels=[0.2, 0.5, 0.8], colors='black', linewidths=0.5, alpha=0.7)
     
-    # Légende
+    # Legend
     cbar = plt.colorbar(contour, ax=ax, shrink=0.8)
     cbar.set_label('Success Probability', rotation=270, labelpad=20)
     
@@ -453,47 +453,47 @@ def plot_situation_heatmap_metrica(attacker_pos, defender_pos, ball_pos, frame_i
 
 def visualize_game_situation(ax, home_pos, away_pos, ball_pos, goal_threat_value, title=None, show_players=True):
     """
-    Visualise une situation de jeu avec les positions des joueurs et la valeur de menace de but.
+    Visualizes a game situation with the players' positions and the goal threat value.
     
     Parameters:
-        ax: Matplotlib axes sur lequel dessiner
-        home_pos: Liste de tuples (x, y) pour les positions de l'équipe à domicile
-        away_pos: Liste de tuples (x, y) pour les positions de l'équipe à l'extérieur
-        ball_pos: Tuple (x, y) pour la position du ballon
-        goal_threat_value: Valeur de menace de but pour cette situation
-        title: Titre optionnel pour le graphique
-        show_players: Booléen indiquant si les joueurs doivent être affichés
+        ax: Matplotlib axes to draw on
+        home_pos: List of (x, y) tuples for the home team positions
+        away_pos: List of (x, y) tuples for the away team positions
+        ball_pos: Tuple (x, y) for the ball position
+        goal_threat_value: Goal threat value for this situation
+        title: Optional title for the plot
+        show_players: Boolean indicating whether the players should be shown
     """
-    # Créer le terrain
+    # Create the pitch
     create_pitch(ax)
     
-    # Afficher les joueurs si demandé
+    # Show the players if requested
     if show_players:
-        # Équipe domicile (points bleus)
+        # Home team (blue dots)
         x_home = [pos[0] for pos in home_pos]
         y_home = [pos[1] for pos in home_pos]
         ax.scatter(x_home, y_home, color='blue', s=100, zorder=2, label='Home Team', alpha=0.7)
         
-        # Équipe extérieur (points rouges)
+        # Away team (red dots)
         x_away = [pos[0] for pos in away_pos]
         y_away = [pos[1] for pos in away_pos]
         ax.scatter(x_away, y_away, color='red', s=100, zorder=2, label='Away Team', alpha=0.7)
     
-    # Dessiner le ballon (point jaune plus grand)
+    # Draw the ball (bigger yellow dot)
     if ball_pos is not None and all(p is not None for p in ball_pos):
         ax.scatter(ball_pos[0], ball_pos[1], color='yellow', s=200, zorder=3, edgecolor='black', label='Ball')
     
-    # Ajouter la valeur de menace de but
+    # Add the goal threat value
     if goal_threat_value is not None:
         threat_text = f"Goal Threat: {goal_threat_value:.4f}"
         ax.text(0.05, 0.95, threat_text, transform=ax.transAxes, fontsize=12, 
                 bbox=dict(facecolor='white', alpha=0.7), verticalalignment='top')
     
-    # Ajouter un titre si fourni
+    # Add a title if provided
     if title:
         ax.set_title(title, fontsize=14)
     
-    # Ajouter une légende
+    # Add a legend
     ax.legend(loc='lower right', fontsize=10)
     
     return ax
@@ -501,22 +501,22 @@ def visualize_game_situation(ax, home_pos, away_pos, ball_pos, goal_threat_value
 
 def plot_situation_heatmap(situation_name, predictor, figsize=(12, 8)):
     """
-    Affiche une carte de chaleur pour une situation donnée
+    Display a heatmap for a given situation
     """
-    # Récupérer la situation
+    # Get the situation
     situation = create_situation(situation_name)
     
     # Configuration
     fig, ax = plt.subplots(figsize=figsize)
     create_pitch(ax)
     
-    # Extraire les données
+    # Extract the data
     origin_x, origin_y = situation['passeur']
     adv_positions = situation['adversaires']
     teammate_positions = situation['coequipiers']
     
-    # Afficher les joueurs
-    plot_player(ax, origin_x, origin_y, 'home', '10')  # Passeur avec numéro
+    # Display the players
+    plot_player(ax, origin_x, origin_y, 'home', '10')  # Passer with number
     
     for i, (x, y) in enumerate(adv_positions):
         plot_player(ax, x, y, 'away')
@@ -524,7 +524,7 @@ def plot_situation_heatmap(situation_name, predictor, figsize=(12, 8)):
     for i, (x, y) in enumerate(teammate_positions):
         plot_player(ax, x, y, 'home')
     
-    # Créer et afficher la carte de chaleur
+    # Create and display the heatmap
     x_grid, y_grid, prob_matrix = create_pass_heatmap(
         origin_x, origin_y, adv_positions, teammate_positions, predictor
     )
@@ -533,10 +533,10 @@ def plot_situation_heatmap(situation_name, predictor, figsize=(12, 8)):
     cmap = LinearSegmentedColormap.from_list('custom', ['red', 'yellow', 'green'], N=100)
     contour = ax.contourf(X, Y, prob_matrix, levels=50, cmap=cmap, alpha=0.6)
     
-    # Ajouter des contours pour plus de clarté
+    # Add contours for clarity
     ax.contour(X, Y, prob_matrix, levels=[0.2, 0.5, 0.8], colors='black', linewidths=0.5, alpha=0.7)
     
-    # Légende
+    # Legend
     cbar = plt.colorbar(contour, ax=ax, shrink=0.8)
     cbar.set_label('Success Probability', rotation=270, labelpad=20)
 
@@ -546,7 +546,7 @@ def plot_situation_heatmap(situation_name, predictor, figsize=(12, 8)):
 
 def analyze_pass_features_for_situation(situation_name):
     """
-    Analyse les features pour une situation donnée
+    Analyze the features for a given situation
     """
     situation = create_situation(situation_name)
     origin_x, origin_y = situation['passeur']
@@ -558,7 +558,7 @@ def analyze_pass_features_for_situation(situation_name):
     print(f"Nombre d'adversaires: {len(adv_positions)}")
     print(f"Nombre de coéquipiers: {len(teammate_positions)}")
     
-    # Analyser quelques positions cibles
+    # Analyze a few target positions
     test_targets = [
         (0.7, 0.3, "Avant-droit"),
         (0.8, 0.5, "Centre-avant"),
@@ -577,11 +577,11 @@ def analyze_pass_features_for_situation(situation_name):
         print(f"Adv. proches arrivée: {features['nb_adv_proches_arrivee']}")
         print(f"Coéq. proches arrivée: {features['nb_coequipiers_proches_arrivee']}")
 
-# Fonction utilitaire pour tester une passe spécifique
+# Utility function to test a specific pass
 def test_single_pass(x_passeur, y_passeur, x_cible, y_cible, 
                     adv_positions, teammate_positions, predictor):
     """
-    Teste une passe spécifique et retourne la probabilité avec les détails
+    Test a specific pass and return the probability with the details
     """
     features = calculate_pass_features(
         x_passeur, y_passeur, x_cible, y_cible,
@@ -593,9 +593,9 @@ def test_single_pass(x_passeur, y_passeur, x_cible, y_cible,
     
     return prob, features
 
-# 🤖 CHARGEMENT SÉCURISÉ DU PRÉDICTEUR
+# Safe loading of the predictor
 def load_predictor_safely():
-    """Charge le prédicteur avec fallback"""
+    """Load the predictor with a fallback"""
     try:
         from pass_predictor import PassPredictor
         predictor = PassPredictor().load_model()
@@ -606,15 +606,15 @@ def load_predictor_safely():
         print("💡 Utilisation d'un prédicteur simple")
         
 
-# Charger le prédicteur
+# Load the predictor
 predictor, predictor_type = load_predictor_safely()
 print(f"🎯 Prédicteur utilisé: {predictor_type}")
 
-# 🧪 TEST DES HYPERPARAMÈTRES
+# Test the hyperparameters
 print("🔍 VÉRIFICATION DES HYPERPARAMÈTRES")
 print_hyperparameters_info()
 
-# Test d'une prédiction simple
+# Test a simple prediction
 print("\n🧪 Test d'une prédiction:")
 try:
     situation = create_situation('aile_droite')
@@ -631,10 +631,10 @@ try:
     for key, value in features.items():
         print(f"  {key}: {value:.3f}" if isinstance(value, float) else f"  {key}: {value}")
     
-    # Test de prédiction
+    # Prediction test
     feature_df = pd.DataFrame([features])
     prob = predictor.predict_pass_success(feature_df)[0]
-    # Affichage et sauvegarde de toutes les heatmaps pour chaque situation
+    # Display and save all heatmaps for each situation
     situations = [
         'aile_droite', 'milieu_terrain', 'contre_attaque',
         'surface_reparation', 'relance_basse', 'centre_cote'

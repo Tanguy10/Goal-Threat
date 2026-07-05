@@ -1,321 +1,321 @@
 """
-Situations tactiques réalistes pour tester la fonction goal threat
-Basées sur des formations et des scenarios de jeu authentiques
+Realistic tactical situations to test the goal threat function
+Based on authentic formations and game scenarios
 """
 
 def situation_contre_attaque_rapide():
     """
-    Contre-attaque 3v2 classique
-    - Équipe attaquante: transition rapide avec 3 joueurs avancés
-    - Équipe défensive: seulement 2 défenseurs centraux repositionnés
-    - Ball carrier au milieu de terrain avec 2 ailiers en appui
+    Classic 3v2 counter-attack
+    - Attacking team: fast transition with 3 advanced players
+    - Defending team: only 2 center-backs repositioned
+    - Ball carrier in midfield with 2 wingers in support
     """
-    # Formation attaquante: 4-3-3 en transition offensive
+    # Attacking formation: 4-3-3 in offensive transition
     teammates_position = [
-        # Gardien
+        # Goalkeeper
         (0.05, 0.5),
-        # Défenseurs restés derrière  
+        # Defenders who stayed back  
         (0.25, 0.2), (0.25, 0.4), (0.25, 0.6), (0.25, 0.8),
-        # Milieux remontant
+        # Midfielders pushing up
         (0.45, 0.35), (0.45, 0.65),
-        # Attaquants en contre
-        (0.75, 0.3),   # Ailier gauche
-        (0.8, 0.5),    # Avant-centre (ball carrier)
-        (0.75, 0.7),   # Ailier droit
-        (0.7, 0.5)     # Milieu offensif en soutien
+        # Forwards on the counter
+        (0.75, 0.3),   # Left winger
+        (0.8, 0.5),    # Center-forward (ball carrier)
+        (0.75, 0.7),   # Right winger
+        (0.7, 0.5)     # Attacking midfielder in support
     ]
     
-    # Défense déséquilibrée - seulement quelques joueurs revenus
+    # Unbalanced defense - only a few players recovered
     defenders_position = [
-        # Gardien adverse
+        # Opposing goalkeeper
         (0.95, 0.5),
-        # Défenseurs centraux
+        # Center-backs
         (0.85, 0.45), (0.85, 0.55),
-        # Latéraux pas encore revenus
+        # Fullbacks not yet recovered
         (0.6, 0.15), (0.6, 0.85),
-        # Milieux défensifs
+        # Defensive midfielders
         (0.7, 0.4), (0.7, 0.6)
     ]
     
-    ball_zone = (0.8, 0.5)  # Ballon avec l'avant-centre
+    ball_zone = (0.8, 0.5)  # Ball with the center-forward
     return teammates_position, defenders_position, ball_zone
 
 def situation_action_aile_centrage():
     """
-    Action sur l'aile droite avec centre imminent
-    - Ailier droit en position de centre
-    - Attaquants en position de finition dans la surface
-    - Défense organisée mais sous pression
+    Action on the right wing with an imminent cross
+    - Right winger in a crossing position
+    - Forwards in finishing positions in the box
+    - Organized defense but under pressure
     """
     teammates_position = [
-        # Gardien et défense
+        # Goalkeeper and defense
         (0.05, 0.5),
         (0.2, 0.2), (0.2, 0.4), (0.2, 0.6), (0.2, 0.8),
-        # Milieux
+        # Midfielders
         (0.4, 0.4), (0.5, 0.5), (0.4, 0.6),
-        # Attaquants dans la surface
-        (0.88, 0.45),  # Avant-centre
-        (0.85, 0.6),   # Second attaquant
-        (0.92, 0.15)   # Ailier droit (ball carrier)
+        # Forwards in the box
+        (0.88, 0.45),  # Center-forward
+        (0.85, 0.6),   # Second forward
+        (0.92, 0.15)   # Right winger (ball carrier)
     ]
     
     defenders_position = [
-        # Gardien
+        # Goalkeeper
         (0.95, 0.5),
-        # Défense centrale
+        # Central defense
         (0.9, 0.4), (0.9, 0.6),
-        # Latéraux
+        # Fullbacks
         (0.85, 0.2), (0.88, 0.8),
-        # Milieux défensifs
+        # Defensive midfielders
         (0.75, 0.35), (0.75, 0.55), (0.8, 0.45)
     ]
     
-    ball_zone = (0.92, 0.15)  # Ailier en position de centre
+    ball_zone = (0.92, 0.15)  # Winger in a crossing position
     return teammates_position, defenders_position, ball_zone
 
 def situation_coup_franc_dangereux():
     """
-    Coup franc à 25m du but
-    - Tireur direct face au but
-    - Mur défensif organisé
-    - Attaquants positionnés pour rebond ou déviation
+    Free kick 25m from goal
+    - Direct kicker facing the goal
+    - Organized defensive wall
+    - Forwards positioned for a rebound or deflection
     """
     teammates_position = [
-        # Gardien et défenseurs
+        # Goalkeeper and defenders
         (0.05, 0.5),
         (0.3, 0.3), (0.3, 0.5), (0.3, 0.7),
-        # Milieux de terrain
+        # Midfielders
         (0.5, 0.4), (0.5, 0.6),
-        # Joueurs dans la surface pour rebond
+        # Players in the box for a rebound
         (0.88, 0.4), (0.88, 0.6), (0.9, 0.5),
-        # Tireur
+        # Kicker
         (0.75, 0.5),
-        # Joueur pour passe courte
+        # Player for a short pass
         (0.72, 0.4)
     ]
     
     defenders_position = [
-        # Gardien
+        # Goalkeeper
         (0.95, 0.5),
-        # Mur défensif
+        # Defensive wall
         (0.82, 0.45), (0.82, 0.48), (0.82, 0.52), (0.82, 0.55),
-        # Défenseurs marquant dans la surface
+        # Defenders marking in the box
         (0.9, 0.4), (0.9, 0.6), (0.93, 0.5),
-        # Milieux défensifs
+        # Defensive midfielders
         (0.75, 0.3), (0.75, 0.7)
     ]
     
-    ball_zone = (0.75, 0.5)  # Position du coup franc
+    ball_zone = (0.75, 0.5)  # Free kick position
     return teammates_position, defenders_position, ball_zone
 
 def situation_corner_offensif():
     """
-    Corner offensif avec organisation tactique réaliste
-    - Tireur de corner
-    - Attaquants positionnés sur les zones de finition
-    - Défense en marquage mixte
+    Attacking corner with realistic tactical organization
+    - Corner taker
+    - Forwards positioned in the finishing zones
+    - Defense in mixed marking
     """
     teammates_position = [
-        # Gardien et défenseur resté derrière
+        # Goalkeeper and defender who stayed back
         (0.05, 0.5), (0.5, 0.5),
-        # Milieux remontés
+        # Midfielders pushed up
         (0.75, 0.3), (0.8, 0.4),
-        # Attaquants dans la surface
-        (0.92, 0.45),  # Premier poteau
-        (0.88, 0.5),   # Centre de la surface
-        (0.85, 0.55),  # Second poteau
-        (0.82, 0.4),   # Point de penalty
-        # Joueurs pour contre-jeu
+        # Forwards in the box
+        (0.92, 0.45),  # Near post
+        (0.88, 0.5),   # Center of the box
+        (0.85, 0.55),  # Far post
+        (0.82, 0.4),   # Penalty spot
+        # Players for the counter
         (0.7, 0.6), (0.65, 0.35),
-        # Tireur de corner
+        # Corner taker
         (1.0, 0.05)
     ]
     
     defenders_position = [
-        # Gardien
+        # Goalkeeper
         (0.95, 0.5),
-        # Défenseurs sur la ligne
+        # Defenders on the line
         (0.98, 0.45), (0.98, 0.55),
-        # Marquage dans la surface
+        # Marking in the box
         (0.9, 0.45), (0.86, 0.5), (0.83, 0.55),
-        # Défenseurs sur le marquage
+        # Defenders marking
         (0.82, 0.4), (0.88, 0.4),
-        # Joueur sur poteau arrière
+        # Player on the back post
         (0.99, 0.3),
-        # Milieu défensif pour dégagement
+        # Defensive midfielder for clearance
         (0.75, 0.5)
     ]
     
-    ball_zone = (1.0, 0.05)  # Corner droit
+    ball_zone = (1.0, 0.05)  # Right corner
     return teammates_position, defenders_position, ball_zone
 
 def situation_rupture_milieu():
     """
-    Rupture par le milieu de terrain
-    - Milieu offensif porteur du ballon
-    - Percussion centrale entre les lignes
-    - Attaquants en mouvement pour combinaison
+    Break through the midfield
+    - Attacking midfielder carrying the ball
+    - Central drive between the lines
+    - Forwards moving for a combination
     """
     teammates_position = [
-        # Gardien et défense
+        # Goalkeeper and defense
         (0.05, 0.5),
         (0.2, 0.25), (0.2, 0.4), (0.2, 0.6), (0.2, 0.75),
-        # Milieux
-        (0.4, 0.3), (0.4, 0.7),  # Milieux excentrés
-        # Rupture et attaque
-        (0.65, 0.5),   # Milieu offensif (ball carrier)
-        (0.8, 0.4),    # Attaquant en appel
-        (0.8, 0.6),    # Second attaquant
-        (0.75, 0.5)    # Meneur de jeu en soutien
+        # Midfielders
+        (0.4, 0.3), (0.4, 0.7),  # Wide midfielders
+        # Break and attack
+        (0.65, 0.5),   # Attacking midfielder (ball carrier)
+        (0.8, 0.4),    # Forward making a run
+        (0.8, 0.6),    # Second forward
+        (0.75, 0.5)    # Playmaker in support
     ]
     
     defenders_position = [
-        # Gardien
+        # Goalkeeper
         (0.95, 0.5),
-        # Défense organisée
+        # Organized defense
         (0.85, 0.3), (0.85, 0.45), (0.85, 0.55), (0.85, 0.7),
-        # Milieux défensifs
+        # Defensive midfielders
         (0.7, 0.4), (0.7, 0.6),
-        # Milieu récupérateur
+        # Ball-winning midfielder
         (0.6, 0.5)
     ]
     
-    ball_zone = (0.65, 0.5)  # Milieu offensif en rupture
+    ball_zone = (0.65, 0.5)  # Attacking midfielder breaking through
     return teammates_position, defenders_position, ball_zone
 
 def situation_une_deux_surface():
     """
-    Une-deux à l'entrée de la surface de réparation
-    - Combinaison rapide entre deux attaquants
-    - Défense compacte mais prise de vitesse
-    - Finition probable
+    One-two at the edge of the penalty area
+    - Quick combination between two forwards
+    - Compact defense but caught out
+    - Likely finish
     """
     teammates_position = [
-        # Gardien et défense
+        # Goalkeeper and defense
         (0.05, 0.5),
         (0.25, 0.2), (0.25, 0.4), (0.25, 0.6), (0.25, 0.8),
-        # Milieux en soutien
+        # Midfielders in support
         (0.45, 0.4), (0.45, 0.6), (0.5, 0.5),
-        # Combinaison à l'entrée de surface
-        (0.83, 0.5),   # Premier attaquant (ball carrier)
-        (0.87, 0.45),  # Second attaquant pour remise
-        (0.8, 0.6)     # Troisième homme
+        # Combination at the edge of the box
+        (0.83, 0.5),   # First forward (ball carrier)
+        (0.87, 0.45),  # Second forward for the lay-off
+        (0.8, 0.6)     # Third man
     ]
     
     defenders_position = [
-        # Gardien
+        # Goalkeeper
         (0.95, 0.5),
-        # Défense resserrée
+        # Tight defense
         (0.88, 0.4), (0.88, 0.6),
         (0.85, 0.45), (0.85, 0.55),
-        # Milieux défensifs
+        # Defensive midfielders
         (0.75, 0.35), (0.75, 0.65),
         (0.8, 0.5)
     ]
     
-    ball_zone = (0.83, 0.5)  # À l'entrée de la surface
+    ball_zone = (0.83, 0.5)  # At the edge of the box
     return teammates_position, defenders_position, ball_zone
 
 def situation_pressing_haut():
     """
-    Pressing haut avec récupération du ballon
-    - Équipe qui vient de récupérer haut
-    - Défense adverse déséquilibrée
-    - Transition offensive immédiate
+    High press with ball recovery
+    - Team that has just won the ball high
+    - Opponent's defense off-balance
+    - Immediate attacking transition
     """
     teammates_position = [
-        # Gardien et défense haute
+        # Goalkeeper and high defense
         (0.05, 0.5),
         (0.45, 0.2), (0.45, 0.4), (0.45, 0.6), (0.45, 0.8),
-        # Milieux hauts
+        # High midfielders
         (0.6, 0.35), (0.6, 0.65),
-        # Pressing et transition
-        (0.75, 0.5),   # Récupérateur (ball carrier)
-        (0.8, 0.4),    # Attaquant proche
-        (0.8, 0.6),    # Second attaquant
-        (0.72, 0.5)    # Meneur en soutien
+        # Press and transition
+        (0.75, 0.5),   # Ball-winner (ball carrier)
+        (0.8, 0.4),    # Nearby forward
+        (0.8, 0.6),    # Second forward
+        (0.72, 0.5)    # Playmaker in support
     ]
     
     defenders_position = [
-        # Gardien
+        # Goalkeeper
         (0.95, 0.5),
-        # Défense surprise et haute
+        # Surprised, high defense
         (0.7, 0.3), (0.7, 0.7),
-        # Défenseurs centraux pas encore repositionnés
+        # Center-backs not yet repositioned
         (0.82, 0.45), (0.82, 0.55),
-        # Milieux en récupération
+        # Midfielders recovering
         (0.68, 0.4), (0.68, 0.6)
     ]
     
-    ball_zone = (0.75, 0.5)  # Ballon récupéré haut
+    ball_zone = (0.75, 0.5)  # Ball won high
     return teammates_position, defenders_position, ball_zone
 
 def situation_sortie_balle_arretee():
     """
-    Sortie de balle arrêtée avec organisation offensive
-    - Relance depuis un coup franc défensif
-    - Transition organisée vers l'attaque
-    - Défense en replacement
+    Build-up from a set piece with attacking organization
+    - Restart from a defensive free kick
+    - Organized transition to attack
+    - Defense recovering position
     """
     teammates_position = [
-        # Gardien
+        # Goalkeeper
         (0.05, 0.5),
-        # Défense étalée pour la relance
+        # Spread defense for the build-up
         (0.2, 0.2), (0.2, 0.8), (0.15, 0.4), (0.15, 0.6),
-        # Milieux en soutien
+        # Midfielders in support
         (0.35, 0.3), (0.35, 0.7), (0.4, 0.5),
-        # Attaquants en mouvement
+        # Forwards on the move
         (0.65, 0.4), (0.65, 0.6),
-        # Relanceur
+        # Player starting the build-up
         (0.25, 0.5)
     ]
     
     defenders_position = [
-        # Gardien adverse
+        # Opposing goalkeeper
         (0.95, 0.5),
-        # Défense en replacement
+        # Defense recovering position
         (0.8, 0.25), (0.8, 0.45), (0.8, 0.55), (0.8, 0.75),
-        # Milieux en récupération
+        # Midfielders recovering
         (0.6, 0.4), (0.6, 0.6), (0.7, 0.5)
     ]
     
-    ball_zone = (0.25, 0.5)  # Ballon avec le relanceur
+    ball_zone = (0.25, 0.5)  # Ball with the build-up player
     return teammates_position, defenders_position, ball_zone
 
 def situation_attaque_organisee_vers_la_droite():
     """
-    Attaque organisée orientée vers la droite
-    - Carrés en possession, progression vers l’axe
-    - Ronds en organisation défensive
+    Organized attack oriented to the right
+    - Squares in possession, progression toward the center
+    - Circles in defensive organization
     """
     teammates_position = [
-        # Défense large pour étirer le bloc adverse
+        # Wide defense to stretch the opponent's block
         (0.25, 0.75), (0.25, 0.25),
-        # Milieux relayeurs autour du cercle central
+        # Box-to-box midfielders around the center circle
         (0.45, 0.60), (0.45, 0.40),
-        # Milieu axial dans l’axe
+        # Central midfielder in the middle
         (0.50, 0.50),
-        # Attaquants proches de la zone adverse
+        # Forwards near the opponent's zone
         (0.52, 0.60), (0.52, 0.40),
-        # Soutien bas en grand périmètre
+        # Deep support on a wide perimeter
         (0.35, 0.15)
     ]
     
     defenders_position = [
-        # Gardien adverse
+        # Opposing goalkeeper
         (0.95, 0.50),
-        # Ligne défensive en replacement
+        # Defensive line recovering position
         (0.75, 0.80), (0.75, 0.60), (0.75, 0.40), (0.75, 0.20),
-        # Milieux récupérateurs devant la défense
+        # Ball-winning midfielders in front of the defense
         (0.60, 0.70), (0.60, 0.50), (0.60, 0.30)
     ]
     
-    # Ballon juste dans la moitié adverse, à droite de la ligne médiane
+    # Ball just inside the opponent's half, right of the halfway line
     ball_zone = (0.53, 0.55)
     
     return teammates_position, defenders_position, ball_zone
 
-# Export des nouvelles situations réalistes
+# Export of the new realistic situations
 REALISTIC_SITUATIONS = [
     ("Contre-attaque rapide", situation_contre_attaque_rapide),
     ("Action aile + centre", situation_action_aile_centrage),

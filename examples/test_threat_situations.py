@@ -261,14 +261,14 @@ def test_single_situation(situation_name):
     plt.tight_layout()
     plt.show()
     
-    # Analyse textuelle détaillée avec contexte tactique
+    # Detailed textual analysis with tactical context
     print(f"\n� DONNÉES DE LA SITUATION:")
     print(f"   �📍 Position du ballon: ({ball_pos[0]:.3f}, {ball_pos[1]:.3f})")
     print(f"   👥 Joueurs attaquants: {len(teammates_pos)}")
     print(f"   🛡️  Joueurs défenseurs: {len(defenders_pos)}")
     print(f"   ⚡ Niveau de menace: {threat:.4f}")
     
-    # Classification du niveau de menace avec seuils adaptés au réalisme
+    # Classify the threat level with thresholds adapted to realism
     if threat > 0.6:
         level_emoji = "🔴"
         threat_level = "CRITIQUE"
@@ -289,16 +289,16 @@ def test_single_situation(situation_name):
     print(f"   {level_emoji} Évaluation: {threat_level}")
     print(f"   💡 Conseil tactique: {tactical_advice}")
     
-    # Analyse géométrique et tactique
+    # Geometric and tactical analysis
     print(f"\n🎯 ANALYSE TACTIQUE AVANCÉE:")
     
-    # Distance au but et angle de tir
+    # Distance to goal and shot angle
     goal_pos = (1.0, 0.5)
     distance_to_goal = np.sqrt((ball_pos[0] - goal_pos[0])**2 + (ball_pos[1] - goal_pos[1])**2)
     print(f"   � Distance au but: {distance_to_goal:.3f} ({distance_to_goal*105:.1f}m)")
     
-    # Analyse de l'angle de tir
-    angle_shot = abs(ball_pos[1] - 0.5)  # Écart par rapport au centre
+    # Shot angle analysis
+    angle_shot = abs(ball_pos[1] - 0.5)  # Offset from the center
     if angle_shot < 0.1:
         angle_quality = "Excellent (face au but)"
     elif angle_shot < 0.2:
@@ -307,13 +307,13 @@ def test_single_situation(situation_name):
         angle_quality = "Difficile (angle fermé)"
     print(f"   📐 Qualité de l'angle: {angle_quality}")
     
-    # Analyse défensive
+    # Defensive analysis
     if defenders_pos:
         defenders_array = np.array(defenders_pos)
         defenders_center = np.mean(defenders_array, axis=0)
         print(f"   🛡️  Centre défensif: ({defenders_center[0]:.3f}, {defenders_center[1]:.3f})")
         
-        # Compacité défensive
+        # Defensive compactness
         defenders_distances = [np.linalg.norm(pos - defenders_center) for pos in defenders_pos]
         avg_defensive_spread = np.mean(defenders_distances)
         
@@ -326,25 +326,25 @@ def test_single_situation(situation_name):
         
         print(f"   📏 Organisation défensive: {defensive_quality} (étalement: {avg_defensive_spread:.3f})")
         
-        # Défenseurs dans la zone critique
+        # Defenders in the critical zone
         critical_zone_defenders = len([pos for pos in defenders_pos if pos[0] > 0.8])
         print(f"   🚨 Défenseurs en zone critique: {critical_zone_defenders}")
     
-    # Analyse offensive
+    # Offensive analysis
     if teammates_pos:
         teammates_array = np.array(teammates_pos)
         teammates_center = np.mean(teammates_array, axis=0)
         print(f"   ⚔️  Centre offensif: ({teammates_center[0]:.3f}, {teammates_center[1]:.3f})")
         
-        # Joueurs dans la surface adverse
+        # Players in the opponent's box
         attackers_in_box = len([pos for pos in teammates_pos if pos[0] > 0.83])
         print(f"   🏃 Attaquants dans la surface: {attackers_in_box}")
         
-        # Support offensif
+        # Offensive support
         support_players = len([pos for pos in teammates_pos if 0.6 < pos[0] < 0.83])
         print(f"   🤝 Joueurs de soutien: {support_players}")
     
-    # Analyse contextuelle selon le type de situation
+    # Contextual analysis by situation type
     print(f"\n� CONTEXTE TACTIQUE:")
     situation_context = {
         "contre_attaque": "Transition rapide exploitant le déséquilibre défensif adverse",
@@ -361,7 +361,7 @@ def test_single_situation(situation_name):
     context = situation_context.get(situation_name, "Situation de jeu standard")
     print(f"   📝 Description: {context}")
     
-    # Recommandations tactiques spécifiques
+    # Specific tactical recommendations
     recommendations = {
         "contre_attaque": "Privilégier la verticalité et la vitesse d'exécution",
         "aile_centre": "Timing du centre crucial, viser les zones de finition",
@@ -383,64 +383,64 @@ def test_single_situation(situation_name):
     return threat
 
 def draw_professional_pitch(ax, pitch_length=105, pitch_width=68):
-    """Dessine un terrain de football professionnel (style Animation_terrain.py)"""
-    # Fond vert
+    """Draw a professional football pitch (Animation_terrain.py style)"""
+    # Green background
     ax.set_facecolor("forestgreen")
     ax.figure.patch.set_facecolor("forestgreen")
     
-    # Contour du terrain
+    # Pitch outline
     ax.add_patch(patches.Rectangle(
         (0, 0), pitch_length, pitch_width,
         fill=False, edgecolor="white", linewidth=3
     ))
     
-    # Ligne médiane
+    # Halfway line
     ax.plot([pitch_length/2, pitch_length/2], [0, pitch_width], color="white", linewidth=3)
     
-    # Cercle central
+    # Center circle
     center = (pitch_length/2, pitch_width/2)
     ax.add_patch(patches.Circle(center, 9.15, fill=False, edgecolor="white", linewidth=2))
     ax.plot(center[0], center[1], 'wo', markersize=4)
     
-    # Surface de réparation gauche (notre but)
+    # Penalty area left (our goal)
     penalty_left = patches.Rectangle((0, (pitch_width-40.32)/2), 16.5, 40.32, 
                                    fill=False, edgecolor="white", linewidth=2)
     ax.add_patch(penalty_left)
     
-    # Petite surface gauche
+    # Goal area left
     small_left = patches.Rectangle((0, (pitch_width-18.32)/2), 5.5, 18.32,
                                  fill=False, edgecolor="white", linewidth=2)
     ax.add_patch(small_left)
     
-    # Surface de réparation droite (but adverse)
+    # Penalty area right (opponent's goal)
     penalty_right = patches.Rectangle((pitch_length-16.5, (pitch_width-40.32)/2), 16.5, 40.32,
                                     fill=False, edgecolor="white", linewidth=2)
     ax.add_patch(penalty_right)
     
-    # Petite surface droite
+    # Goal area right
     small_right = patches.Rectangle((pitch_length-5.5, (pitch_width-18.32)/2), 5.5, 18.32,
                                   fill=False, edgecolor="white", linewidth=2)
     ax.add_patch(small_right)
     
-    # Buts
+    # Goals
     goal_height = 7.32
     goal_y = (pitch_width - goal_height) / 2
     
-    # But gauche (notre but)
+    # Left goal (our goal)
     goal_left = patches.Rectangle((-2, goal_y), 2, goal_height,
                                 fill=True, facecolor="lightblue", edgecolor="white", linewidth=3)
     ax.add_patch(goal_left)
     
-    # But droit (but adverse)
+    # Right goal (opponent's goal)
     goal_right = patches.Rectangle((pitch_length, goal_y), 2, goal_height,
                                  fill=True, facecolor="lightcoral", edgecolor="white", linewidth=3)
     ax.add_patch(goal_right)
     
-    # Points de penalty
+    # Penalty spots
     ax.plot(11, pitch_width/2, 'wo', markersize=6)
     ax.plot(pitch_length-11, pitch_width/2, 'wo', markersize=6)
     
-    # Arcs de cercle de penalty
+    # Penalty arcs
     penalty_arc_left = patches.Arc((11, pitch_width/2), 18.3, 18.3, 
                                  theta1=308, theta2=52, color="white", linewidth=2)
     ax.add_patch(penalty_arc_left)
@@ -449,27 +449,27 @@ def draw_professional_pitch(ax, pitch_length=105, pitch_width=68):
                                   theta1=128, theta2=232, color="white", linewidth=2)
     ax.add_patch(penalty_arc_right)
     
-    # Configuration des axes
+    # Axis configuration
     ax.set_xlim(-5, pitch_length+5)
     ax.set_ylim(-5, pitch_width+5)
     ax.set_aspect("equal")
     ax.axis("off")
 
 def draw_threat_gauge(ax, x, y, width, height, value, color, label, max_value=1.0):
-    """Dessine une jauge de menace professionnelle"""
-    # Fond de la jauge
+    """Draw a professional threat gauge"""
+    # Gauge background
     bg_rect = patches.Rectangle((x, y), width, height, 
                               facecolor='black', edgecolor='white', linewidth=2, alpha=0.7)
     ax.add_patch(bg_rect)
     
-    # Barre de progression
+    # Progress bar
     progress_width = width * (value / max_value)
     if progress_width > 0:
         progress_rect = patches.Rectangle((x, y), progress_width, height,
                                         facecolor=color, alpha=0.8)
         ax.add_patch(progress_rect)
     
-    # Texte de la jauge
+    # Gauge text
     ax.text(x + width/2, y + height/2, f'{value*100:.1f}%',
            ha='center', va='center', fontsize=10, fontweight='bold', color='white')
     
@@ -479,36 +479,36 @@ def draw_threat_gauge(ax, x, y, width, height, value, color, label, max_value=1.
     return [bg_rect, progress_rect] if progress_width > 0 else [bg_rect]
 
 def convert_normalized_to_pitch(pos, pitch_length=105, pitch_width=68):
-    """Convertit les coordonnées normalisées (0-1) vers les dimensions du terrain"""
+    """Convert normalized coordinates (0-1) to the pitch dimensions"""
     x, y = pos
     return (x * pitch_length, y * pitch_width)
 
 def draw_football_pitch(ax, ball_pos, teammates_pos, defenders_pos, threat_value, title, save_path=None):
-    """Dessine un terrain de football professionnel avec les joueurs et le ballon"""
+    """Draw a professional football pitch with the players and the ball"""
     
-    # Nettoyer l'axe
+    # Clear the axis
     ax.clear()
     
-    # Dimensions du terrain réel
+    # Real pitch dimensions
     pitch_length, pitch_width = 105, 68
     
-    # Dessiner le terrain professionnel
+    # Draw the professional pitch
     draw_professional_pitch(ax, pitch_length, pitch_width)
     
-    # Convertir les positions normalisées vers les dimensions du terrain
+    # Convert the normalized positions to the pitch dimensions
     ball_pitch = convert_normalized_to_pitch(ball_pos, pitch_length, pitch_width)
     teammates_pitch = [convert_normalized_to_pitch(pos, pitch_length, pitch_width) for pos in teammates_pos]
     defenders_pitch = [convert_normalized_to_pitch(pos, pitch_length, pitch_width) for pos in defenders_pos]
     
-    # Dessiner les joueurs avec un style professionnel
-    # Coéquipiers (équipe attaquante) en bleu
+    # Draw the players with a professional style
+    # Teammates (attacking team) in blue
     for i, (x, y) in enumerate(teammates_pitch):
         circle = patches.Circle((x, y), 1.5, facecolor='royalblue', edgecolor='white', linewidth=2, alpha=0.9)
         ax.add_patch(circle)
         ax.annotate(f'{i+1}', (x, y), ha='center', va='center',
                    fontsize=9, color='white', fontweight='bold')
     
-    # Défenseurs (équipe défensive) en rouge
+    # Defenders (defending team) in red
     for i, (x, y) in enumerate(defenders_pitch):
         square = patches.Rectangle((x-1.5, y-1.5), 3, 3, facecolor='firebrick', 
                                  edgecolor='white', linewidth=2, alpha=0.9)
@@ -516,20 +516,20 @@ def draw_football_pitch(ax, ball_pos, teammates_pos, defenders_pos, threat_value
         ax.annotate(f'{i+1}', (x, y), ha='center', va='center',
                    fontsize=9, color='white', fontweight='bold')
     
-    # Ballon avec effet brillant
+    # Ball with a glossy effect
     ball_circle = patches.Circle(ball_pitch, 1.2, facecolor='gold', edgecolor='black', linewidth=2, zorder=10)
     ax.add_patch(ball_circle)
-    # Effet brillant sur le ballon
+    # Glossy effect on the ball
     highlight = patches.Circle((ball_pitch[0]-0.3, ball_pitch[1]+0.3), 0.4, 
                              facecolor='white', alpha=0.6, zorder=11)
     ax.add_patch(highlight)
     
-    # Jauge de menace professionnelle
+    # Professional threat gauge
     threat_color = 'red' if threat_value > 0.5 else 'orange' if threat_value > 0.3 else 'green'
     gauge_elements = draw_threat_gauge(ax, 5, pitch_width-8, 25, 4, threat_value, threat_color, 
                                      'GOAL THREAT')
     
-    # Titre professionnel avec fond
+    # Professional title with background
     title_bg = patches.Rectangle((pitch_length/2-25, pitch_width+8), 50, 6,
                                facecolor='black', alpha=0.8, edgecolor='white', linewidth=2)
     ax.add_patch(title_bg)

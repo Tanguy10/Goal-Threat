@@ -13,69 +13,59 @@ import joblib
 import pickle
 from functools import lru_cache
 import pandas as pd
-# Créer une instance du prédicteur
-# predictor = GoAloneSimplePredictor(
-    # normalized_coords=True,
-    # sigma_close=0.03,
-    # sigma_trajectory=0.08
-# )
-# from XG_model_statsbomb import XGPredictor
-# predictor = XGPredictor(
-#    pipeline_path="xg_pipeline.pkl",
-#    csv_path="shot_opportunities_database.csv",
-#)
+
 
 
 
 def distance(x,y):
     """
-    Calcule la distance euclidienne entre deux points (x, y).
+    Compute the Euclidean distance between two points (x, y).
     
     Args:
-        x (Tuple[float, float]): Coordonnées du premier point.
-        y (Tuple[float, float]): Coordonnées du second point.
+        x (Tuple[float, float]): Coordinates of the first point.
+        y (Tuple[float, float]): Coordinates of the second point.
 
     Returns:
-        float: La distance euclidienne entre les deux points.
+        float: The Euclidean distance between the two points.
     """
     return np.sqrt((x[0] - y[0])**2 + (x[1] - y[1])**2)
 
 def is_off_side( player_pos: Tuple[float, float],defenders_pos: List[Tuple[float, float]], ball_pos: Tuple[float, float]) -> bool:
     """
-    Vérifie si un joueur est en position de hors-jeu.
+    Check whether a player is in an offside position.
 
     Args:
-        player_pos (Tuple[float, float]): Coordonnées du joueur.
-        defenders_pos (List[Tuple[float, float]]): Coordonnées des défenseurs.
-        ball_pos (Tuple[float, float]): Coordonnées du ballon.
+        player_pos (Tuple[float, float]): Player coordinates.
+        defenders_pos (List[Tuple[float, float]]): Defender coordinates.
+        ball_pos (Tuple[float, float]): Ball coordinates.
 
     Returns:
-        bool: True si le joueur est en position de hors-jeu, False sinon.
+        bool: True if the player is offside, False otherwise.
     """
-    if ball_pos[0] > player_pos[0]:  # Le ballon est devant le joueur
+    if ball_pos[0] > player_pos[0]:  # The ball is in front of the player
         return False
 
-    # Vérifier si le joueur est derrière la ligne des défenseurs
+    # Check whether the player is behind the defenders' line
     number =0
     for defender in defenders_pos:
-        if defender[0] < player_pos[0]:  # Un défenseur est derrière le joueur
+        if defender[0] < player_pos[0]:  # A defender is behind the player
             number += 1
 
     return number > 2
 
 
 class MLShotPredictor:
-    """Prédicteur de tirs utilisant un modèle ML avec les 4 features de base uniquement"""
+    """Shot predictor using an ML model with only the 4 base features"""
     
     VALID_MODELS = ['LightGBM', 'XGBoost', 'RandomForest', 'LogisticRegression']
     
     def __init__(self, model_type='LogisticRegression', model_path=None):
         """
-        Initialise le prédicteur en chargeant le modèle spécifié
+        Initialize the predictor by loading the specified model
         
         Args:
-            model_type: Type de modèle à utiliser ('LightGBM', 'XGBoost', 'RandomForest', 'LogisticRegression')
-            model_path: Chemin vers le fichier du modèle (pkl ou txt), si None utilise le modèle par défaut
+            model_type: Type of model to use ('LightGBM', 'XGBoost', 'RandomForest', 'LogisticRegression')
+            model_path: Path to the model file (pkl or txt); if None, use the default model
         """
         self.model = None
         self.model_type = model_type if model_type in self.VALID_MODELS else 'LogisticRegression'
@@ -83,41 +73,41 @@ class MLShotPredictor:
     
     def load_model(self, model_path=None):
         """
-        Charge le modèle depuis un fichier
+        Load the model from a file
         
-        Si model_path est None, recherche le modèle spécifié dans les fichiers par défaut
+        If model_path is None, look for the specified model among the default files
         """
         if model_path is None:
-            # Chemin par défaut
+            # Default path
             models_dir = str(MODELS_DIR)
 
-            # Chercher le modèle spécifique
+            # Look for the specific model
             if self.model_type == 'LightGBM':
                 model_path = os.path.join(models_dir, "shot_model_lightgbm.txt")
                 if not os.path.exists(model_path):
                     model_path = os.path.join(models_dir, "best_shot_model.txt")
             else:
-                # Pour les modèles sklearn (XGBoost, RandomForest, LogisticRegression)
+                # For sklearn models (XGBoost, RandomForest, LogisticRegression)
                 model_path = os.path.join(models_dir, f"shot_model_{self.model_type.lower()}.pkl")
                 if not os.path.exists(model_path):
                     model_path = os.path.join(models_dir, "best_shot_model.pkl")
 
-            # Si toujours pas trouvé, utiliser le modèle par défaut
+            # If still not found, use the default model
             if not os.path.exists(model_path):
                 model_path = os.path.join(models_dir, "go_alone_model.txt")
-                self.model_type = 'LightGBM'  # Fallback sur LightGBM
+                self.model_type = 'LightGBM'  # Fallback to LightGBM
         
-        # Charger le modèle
+        # Load the model
         try:
             if model_path.endswith('.txt'):
-                # Pour les modèles LightGBM (.txt)
+                # For LightGBM models (.txt)
                 import lightgbm as lgb
                 self.model = lgb.Booster(model_file=model_path)
                 self.model_type = 'LightGBM'
             else:
-                # Pour les modèles sklearn (.pkl)
+                # For sklearn models (.pkl)
                 self.model = joblib.load(model_path)
-                # Détecter le type de modèle
+                # Detect the model type
                 if hasattr(self.model, '__class__'):
                     model_class = self.model.__class__.__name__
                     if 'XGBoost' in model_class:
@@ -136,14 +126,14 @@ class MLShotPredictor:
     
     @lru_cache(maxsize=1024)
     def _predict_xg_cached(self, player_x, player_y, defenders_tuple):
-        """Version mise en cache de predict_xg pour les 4 features de base"""
-        # Convertir le tuple en liste
+        """Cached version of predict_xg for the 4 base features"""
+        # Convert the tuple to a list
         defenders_coords = [d for d in defenders_tuple] if defenders_tuple else []
         
-        # Calculer uniquement les 4 features de base
+        # Compute only the 4 base features
         features = self._calculate_basic_features(player_x, player_y, defenders_coords)
         
-        # Prédire avec le modèle approprié
+        # Predict with the appropriate model
         if self.model_type == 'LightGBM':
             return self.model.predict(features)[0]
         else:
@@ -152,43 +142,43 @@ class MLShotPredictor:
     
     def predict_xg(self, player_x, player_y, defenders_coords=None):
         """
-        Prédit la probabilité de marquer un but (expected goals) avec les 4 features de base
+        Predict the probability of scoring a goal (expected goals) with the 4 base features
         
         Args:
-            player_x: Position x du tireur (normalisée)
-            player_y: Position y du tireur (normalisée)
-            defenders_coords: Liste des positions des défenseurs [(x1,y1), (x2,y2), ...]
+            player_x: Shooter x position (normalized)
+            player_y: Shooter y position (normalized)
+            defenders_coords: List of defender positions [(x1,y1), (x2,y2), ...]
         
         Returns:
-            float: Probabilité de marquer
+            float: Probability of scoring
         """
         if defenders_coords is None:
             defenders_coords = []
         
-        # Convertir en tuple hashable pour la mise en cache
+        # Convert to a hashable tuple for caching
         defenders_tuple = tuple(tuple(d) for d in defenders_coords)
         
-        # Appeler la version mise en cache
+        # Call the cached version
         return self._predict_xg_cached(player_x, player_y, defenders_tuple)
     
     def _calculate_basic_features(self, player_x, player_y, defenders_coords):
         """
-        Calcule uniquement les 4 features de base pour la prédiction
+        Compute only the 4 base features for the prediction
         
         Returns:
-            numpy.array: Vecteur de features
+            numpy.array: Feature vector
         """
-        # 1. Distance à la ligne de but
+        # 1. Distance to the goal line
         dist_to_goal_line = 1 - player_x
         
-        # 2. Distance au centre
+        # 2. Distance to the center
         dist_from_center = abs(player_y - 0.5)
         
-        # 3. Densité défensive (distance au défenseur le plus proche)
+        # 3. Defensive density (distance to the closest defender)
         if defenders_coords:
             distances = []
             for d in defenders_coords:
-                # Mise à l'échelle pour correspondre aux unités d'origine
+                # Scale to match the original units
                 dx = (player_x - d[0]) * 120
                 dy = (player_y - d[1]) * 80
                 distance = np.sqrt(dx*dx + dy*dy)
@@ -197,7 +187,7 @@ class MLShotPredictor:
         else:
             density = 1.0
             
-        # 4. Défenseurs sur la trajectoire
+        # 4. Defenders on the trajectory
         if defenders_coords:
             def_coord = np.array(defenders_coords)
             defenders_in_path = nb_adv_trajectoire_coords(
@@ -205,7 +195,7 @@ class MLShotPredictor:
         else:
             defenders_in_path = 0
         
-        # Créer le vecteur de features avec uniquement les 4 features de base
+        # Create the feature vector with only the 4 base features
         return np.array([[
             dist_to_goal_line, 
             dist_from_center,
@@ -223,15 +213,15 @@ class Zone:
         self.y = max(0.0, min(1.0, y))
     
     def __iter__(self):
-        """Permet d'utiliser tuple(zone) ou x, y = zone"""
+        """Allows using tuple(zone) or x, y = zone"""
         return iter((self.x, self.y))
     
     def center(self) -> Tuple[float, float]:
-        """Renvoie le centre de la zone sous forme de tuple (x, y)"""
+        """Return the zone center as a tuple (x, y)"""
         return (self.x, self.y)
     
     def __getitem__(self, index):
-        """Permet d'accéder via zone[0] et zone[1]"""
+        """Allows access via zone[0] and zone[1]"""
         if index == 0:
             return self.x
         elif index == 1:
@@ -251,33 +241,33 @@ class Zone:
         return f"Zone({self.x:.3f}, {self.y:.3f})"
     
     def distance_to(self, other: 'Zone') -> float:
-        """Calcule la distance euclidienne vers une autre zone"""
+        """Compute the Euclidean distance to another zone"""
         return np.sqrt((self.x - other.x)**2 + (self.y - other.y)**2)
     
     def is_closer_to_goal_than(self, other: 'Zone', goal: 'Zone' = None) -> bool:
-        """Vérifie si cette zone est plus proche du but qu'une autre"""
+        """Check whether this zone is closer to goal than another"""
         if goal is None:
             goal = Zone(1.0, 0.5)
         return self.distance_to(goal) < other.distance_to(goal)
     
     @classmethod
     def from_tuple(cls, pos: Tuple[float, float]) -> 'Zone':
-        """Crée une zone à partir d'un tuple"""
+        """Create a zone from a tuple"""
         return cls(pos[0], pos[1])
 
 class Player:
-    """Classe pour représenter un joueur"""
+    """Class representing a player"""
     
     def __init__(self, position: Zone, team: str = "unknown", player_id: int = 0):
         self.position = position
-        self.team = team  # "teammates" ou "defenders"
+        self.team = team  # "teammates" or "defenders"
         self.player_id = player_id
     
     def __repr__(self):
         return f"Player({self.team}_{self.player_id}, {self.position})"
     
     def move_towards(self, target: Zone, max_distance: float) -> 'Player':
-        """Crée un nouveau joueur déplacé vers une cible"""
+        """Create a new player moved toward a target"""
         dx = target.x - self.position.x
         dy = target.y - self.position.y
         current_distance = np.sqrt(dx**2 + dy**2)
@@ -292,7 +282,7 @@ class Player:
         return Player(Zone(new_x, new_y), self.team, self.player_id)
 
 class GameState:
-    """Classe pour représenter l'état complet du jeu"""
+    """Class representing the full game state"""
     
     def __init__(self, ball_zone: Zone, teammates: List[Player], defenders: List[Player]):
         self.ball_zone = ball_zone
@@ -307,7 +297,7 @@ class GameState:
     def from_positions(cls, ball_pos: Tuple[float, float], 
                       teammates_pos: List[Tuple[float, float]], 
                       defenders_pos: List[Tuple[float, float]]) -> 'GameState':
-        """Crée un GameState à partir de listes de positions"""
+        """Create a GameState from lists of positions"""
         ball_zone = Zone.from_tuple(ball_pos)
         teammates = [Player(Zone.from_tuple(pos), "teammates", i) 
                     for i, pos in enumerate(teammates_pos)]
@@ -316,19 +306,19 @@ class GameState:
         return cls(ball_zone, teammates, defenders)
 
 class Terrain:
-    """Classe pour gérer le terrain et ses zones"""
+    """Class to manage the pitch and its zones"""
 
     def __init__(self, x_divisions: int = 15, y_divisions: int = 10):
         self.x_divisions = x_divisions
         self.y_divisions = y_divisions
         self.all_zones = self._create_all_zones()
         self.goal = Zone(1.0, 0.5)
-        # Calculer la taille de chaque zone
+        # Compute the size of each zone
         self.zone_width = 1.0 / self.x_divisions
         self.zone_height = 1.0 / self.y_divisions
     
     def _create_all_zones(self) -> List[Zone]:
-        """Crée toutes les zones du terrain"""
+        """Create all the pitch zones"""
         zones = []
         zone_width = 1.0 / self.x_divisions
         zone_height = 1.0 / self.y_divisions
@@ -342,7 +332,7 @@ class Terrain:
         return zones
     
     def get_reachable_zones(self, from_zone: Zone) -> List[Zone]:
-        """Retourne toutes les zones accessibles depuis une zone donnée"""
+        """Return all zones reachable from a given zone"""
         if from_zone.center()[0]< 0.85:
             return [zone for zone in self.all_zones if zone.center()[0] > from_zone.center()[0] +0.05]
         else:
@@ -352,36 +342,36 @@ class Terrain:
 
     def sample_points_in_zone(self, zone: Zone, num_samples: int = 4) -> List[Tuple[float, float]]:
         """
-        Échantillonne plusieurs points aléatoires dans une zone donnée
+        Sample several random points in a given zone
         
         Args:
-            zone: Zone à échantillonner (son centre est déjà connu)
-            num_samples: Nombre de points à échantillonner
+            zone: Zone to sample (its center is already known)
+            num_samples: Number of points to sample
             
         Returns:
-            Liste de points (Zone) échantillonnés
+            List of sampled points (Zone)
         """
-        # Dimensions connues des cellules
+        # Known cell dimensions
         half_width = 1.0 / (2 * self.x_divisions)
         half_height = 1.0 / (2 * self.y_divisions)
         
-        # Coordonnées du centre
+        # Center coordinates
         x_center = zone.x
         y_center = zone.y
         
-        # Limites de la zone
+        # Zone bounds
         min_x = max(0.0, x_center - half_width)
         max_x = min(1.0, x_center + half_width)
         min_y = max(0.0, y_center - half_height)
         max_y = min(1.0, y_center + half_height)
         
-        # Liste des points à retourner
+        # List of points to return
         points = []
         
-        # Toujours inclure le centre
+        # Always include the center
         points.append((x_center, y_center))
         
-        # Générer des points aléatoires pour compléter jusqu'à num_samples
+        # Generate random points to fill up to num_samples
         while len(points) < num_samples:
             x = min_x + np.random.random() * (max_x - min_x)
             y = min_y + np.random.random() * (max_y - min_y)
@@ -391,23 +381,23 @@ class Terrain:
 
 def truth_zone():
     """
-    Renvoie la liste des zones depuis lesquelles le tir direct est le choix optimal.
-    Forme désormais un cône qui se rétrécit en approchant du but.
+    Return the list of zones from which a direct shot is the optimal choice.
+    Now forms a cone that narrows as it approaches the goal.
     
     Returns:
-        List[Zone]: Zones où le tir direct est optimal
+        List[Zone]: Zones where the direct shot is optimal
     """
     zones_optimal_shot = []
     terrain = Terrain()
     for zone in terrain.all_zones:
         x, y = zone.center()
-        # Plus on est proche du but, plus la zone est étroite
+        # The closer to goal, the narrower the zone
         if x > 0.85:
-            # Calculer la largeur permise en fonction de x
-            # Plus x est proche de 1.0 (but), plus la largeur est petite
+            # Compute the allowed width as a function of x
+            # The closer x is to 1.0 (goal), the smaller the width
             max_width = 0.2 * (1.0 - x) / 0.1 + 0.05
             
-            # Vérifier si la zone est dans le cône
+            # Check whether the zone is inside the cone
             if abs(y - 0.5) < max_width:
                 zones_optimal_shot.append(zone)
     return zones_optimal_shot
@@ -416,26 +406,26 @@ truth_zone = truth_zone()
 print(truth_zone)
 
 class MovementCalculator:
-    """Classe pour calculer les mouvements des joueurs"""
+    """Class to compute player movements"""
     
     def __init__(self, player_speed: float = 5.0, ball_speed: float = 15.0):
         self.player_speed = player_speed
         self.ball_speed = ball_speed
     
     def calculate_pass_time(self, from_zone: Zone, to_zone: Zone) -> float:
-        """Calcule le temps nécessaire pour une passe"""
+        """Compute the time needed for a pass"""
         pass_distance = from_zone.distance_to(to_zone)
-        pass_distance_meters = pass_distance * 120  # Terrain 120m
+        pass_distance_meters = pass_distance * 120  # 120m pitch
         return pass_distance_meters / self.ball_speed
     
     def calculate_max_movement(self, from_zone: Zone, to_zone: Zone) -> float:
-        """Calcule la distance maximale qu'un joueur peut parcourir pendant une passe"""
+        """Compute the maximum distance a player can cover during a pass"""
         pass_time = self.calculate_pass_time(from_zone, to_zone)
         max_movement_meters = self.player_speed * pass_time
-        return min(max_movement_meters / 120, 0.1)  # Normaliser et limiter
+        return min(max_movement_meters / 120, 0.1)  # Normalize and cap
     
     def generate_circle_positions(self, center: Zone, radius: float, num_points: int = 10) -> List[Zone]:
-        """Génère des positions dans un cercle autour d'un centre"""
+        """Generate positions within a circle around a center"""
         positions = [center]
         
         if radius > 0:
@@ -451,14 +441,14 @@ class MovementCalculator:
         return positions
 
 class ImportantPlayersIdentifier:
-    """Classe pour identifier les joueurs importants dans une action"""
+    """Class to identify the important players in an action"""
     
     def __init__(self, distance_threshold: float = 0.15, forward_threshold: float = 0.05):
         self.distance_threshold = distance_threshold
         self.forward_threshold = forward_threshold
     
     def identify(self, game_state: GameState, pass_target: Zone) -> Tuple[List[int], List[int]]:
-        """Identifie les joueurs importants pour une passe donnée"""
+        """Identify the important players for a given pass"""
         action_center = Zone(
             (game_state.ball_zone.x + pass_target.x) / 2,
             (game_state.ball_zone.y + pass_target.y) / 2
@@ -481,8 +471,8 @@ class ImportantPlayersIdentifier:
     
     def _is_important_player(self, player: Player, ball_zone: Zone, pass_target: Zone,
                            action_center: Zone, max_x_action: float) -> bool:
-        """Vérifie si un joueur est important pour l'action"""
-        # Critère 1: Proximité à l'action
+        """Check whether a player is important for the action"""
+        # Criterion 1: Proximity to the action
         distances = [
             player.position.distance_to(ball_zone),
             player.position.distance_to(pass_target),
@@ -492,14 +482,14 @@ class ImportantPlayersIdentifier:
         if min(distances) < self.distance_threshold:
             return True
         
-        # Critère 2: Joueur plus avancé sur le terrain
+        # Criterion 2: Player further up the pitch
         if player.position.x > max_x_action + self.forward_threshold:
             return True
         
         return False
 
 class ConfigurationGenerator:
-    """Classe pour générer les configurations de joueurs"""
+    """Class to generate player configurations"""
     
     def __init__(self, movement_calculator: MovementCalculator, max_configs: int = 100):
         self.movement_calculator = movement_calculator
@@ -508,12 +498,12 @@ class ConfigurationGenerator:
     def generate_configurations(self, game_state: GameState, pass_target: Zone,
                             defenders: List[int], teammates: List[int],
                             num_samples: int = 3) -> List[GameState]:
-        """Génère toutes les configurations possibles de joueurs"""
+        """Generate all possible player configurations"""
         max_movement_def = 0.02
         max_movement_att = 0.03
         goal = Zone(1.0, 0.5)
         
-        # 1. Identifier l'attaquant le plus proche de pass_target
+        # 1. Identify the attacker closest to pass_target
         closest_attacker_idx = -1
         min_distance = float('inf')
         for i, teammate in enumerate(game_state.teammates):
@@ -522,63 +512,63 @@ class ConfigurationGenerator:
                 min_distance = dist
                 closest_attacker_idx = i
         
-        # 2. Identifier les 3 attaquants les plus proches du but
+        # 2. Identify the 3 attackers closest to the goal
         advanced_attackers = sorted(
             [(i, player) for i, player in enumerate(game_state.teammates) if i != closest_attacker_idx],
             key=lambda x: x[1].position.distance_to(game_state.goal),
         )[:3]
         advanced_attackers_idx = [idx for idx, _ in advanced_attackers]
         
-        # 3. Préparer les nouvelles positions pour chaque type de joueur
+        # 3. Prepare the new positions for each type of player
         new_teammates = []
         for i, teammate in enumerate(game_state.teammates):
             if i == closest_attacker_idx:
-                # L'attaquant le plus proche va exactement à la position de la passe
+                # The closest attacker goes exactly to the pass position
                 new_teammates.append(Player(pass_target, "teammates", teammate.player_id))
             elif i in advanced_attackers_idx and teammate.position.x < 0.96:
-                # Les 3 attaquants les plus avancés se rapprochent du but avec un peu d'aléatoire
+                # The 3 most advanced attackers move toward the goal with a bit of randomness
                 target_pos = teammate.move_towards(goal, max_movement_att).position
-                # Génère quelques positions autour du point cible
+                # Generate a few positions around the target point
                 possible_positions = self.movement_calculator.generate_circle_positions(target_pos, radius=0.02, num_points=num_samples)
-                # Choisit une position aléatoire parmi ces possibilités
+                # Choose a random position among these possibilities
                 chosen_pos = random.choice(possible_positions)
                 new_teammates.append(Player(chosen_pos, "teammates", teammate.player_id))
             else:
-                # Les autres attaquants restent au même endroit
+                # The other attackers stay in the same place
                 new_teammates.append(teammate)
         
-        # 4. Pour les défenseurs, se recentrer sur l'axe ballon-but
+        # 4. For the defenders, recenter on the ball-goal axis
         new_defenders = []
-        # Calculer le point 1/3 entre la cible de passe et le but
+        # Compute the 1/3 point between the pass target and the goal
         target_x = (2/3) * pass_target.x + (1/3) * goal.x
         target_y = (2/3) * pass_target.y + (1/3) * goal.y
         axis_point = Zone(target_x, target_y)
         for defender in game_state.defenders:
-            # Déplacer le défenseur vers ce point
+            # Move the defender toward this point
             if defender.position.x < 1.0:
                 moved_defender = defender.move_towards(axis_point, max_movement_def)
                 new_defenders.append(moved_defender)
             else :
                 new_defenders.append(defender)
 
-        # Créer une seule configuration avec ces nouvelles positions
+        # Create a single configuration with these new positions
         return [GameState(pass_target, new_teammates, new_defenders)]
 
     def _generate_player_variations(self, players: List[Player], important_indices: List[int],
                                   max_movement: float, target: Zone, num_samples: int,
                                   behavior: str) -> List[List[Zone]]:
-        """Génère les variations de position pour une liste de joueurs"""
+        """Generate position variations for a list of players"""
         variations = []
         
         for i, player in enumerate(players):
             if i in important_indices:
-                # Joueur important: positions aléatoires dans un cercle
+                # Important player: random positions within a circle
                 positions = self.movement_calculator.generate_circle_positions(
                     player.position, max_movement, num_samples
                 )
                 variations.append(positions)
             else:
-                # Joueur non-important: mouvement prédéfini
+                # Non-important player: predefined movement
                 if behavior == "static":
                     new_pos = player.position
                 else:
@@ -589,7 +579,7 @@ class ConfigurationGenerator:
         return variations
 
 class PassPredictor:
-    """Interface pour la prédiction de passes"""
+    """Interface for pass prediction"""
     _instance = None
     
     @classmethod
@@ -604,26 +594,26 @@ class PassPredictor:
     
     def predict_probability(self, from_point, to_point, game_state: GameState) -> float:
         """
-        Prédit la probabilité de succès d'une passe entre deux points
+        Predict the success probability of a pass between two points
         
         Args:
-            from_point: Point de départ (peut être Zone ou tuple)
-            to_point: Point d'arrivée (peut être Zone ou tuple)
-            game_state: État du jeu
+            from_point: Start point (can be Zone or tuple)
+            to_point: End point (can be Zone or tuple)
+            game_state: Game state
             
         Returns:
-            float: Probabilité de réussite de la passe
+            float: Pass success probability
         """
-        # Extraire les coordonnées x, y - supporte à la fois les objets Zone et les tuples
+        # Extract the x, y coordinates - supports both Zone objects and tuples
         from_x = from_point.x if hasattr(from_point, 'x') else from_point[0]
         from_y = from_point.y if hasattr(from_point, 'y') else from_point[1]
         to_x = to_point.x if hasattr(to_point, 'x') else to_point[0]
         to_y = to_point.y if hasattr(to_point, 'y') else to_point[1]
         
-        # Convertir les positions des joueurs
+        # Convert the players' positions
         defenders_pos = [(p.position.x, p.position.y) for p in game_state.defenders]
         
-        # Ne prendre en compte que les coéquipiers qui ne sont pas hors-jeu
+        # Only consider teammates who are not offside
         teammates_pos = []
         for teammate in game_state.teammates:
             if not is_off_side(
@@ -635,7 +625,7 @@ class PassPredictor:
         
         r_config = [defenders_pos, teammates_pos]
         
-        # Calculer les features - création d'un objet Zone temporaire si nécessaire
+        # Compute the features - create a temporary Zone object if needed
         if hasattr(from_point, 'x') and hasattr(to_point, 'x'):
             features = self._calculate_features(from_point, to_point, r_config)
         else:
@@ -643,7 +633,7 @@ class PassPredictor:
             to_zone = Zone(to_x, to_y)
             features = self._calculate_features(from_zone, to_zone, r_config)
         
-        # Créer un DataFrame avec les coordonnées directes
+        # Create a DataFrame with the direct coordinates
         pass_data = pd.DataFrame({
             'x_passeur': [from_x],
             'y_passeur': [from_y],
@@ -660,17 +650,17 @@ class PassPredictor:
     
     def _calculate_features(self, from_point, to_point, r_config) -> dict:
         """
-        Calcule les features pour la prédiction, fonctionne avec des points quelconques
+        Compute the features for the prediction, works with arbitrary points
         
         Args:
-            from_point: Point de départ (peut être Zone ou tuple)
-            to_point: Point d'arrivée (peut être Zone ou tuple)
+            from_point: Start point (can be Zone or tuple)
+            to_point: End point (can be Zone or tuple)
             r_config: Configuration [defenders_positions, teammates_positions]
             
         Returns:
-            dict: Caractéristiques calculées pour la passe
+            dict: Features computed for the pass
         """
-        # Extraction des coordonnées - supporte à la fois les objets Zone et les tuples
+        # Extract the coordinates - supports both Zone objects and tuples
         from_x = from_point.x if hasattr(from_point, 'x') else from_point[0]
         from_y = from_point.y if hasattr(from_point, 'y') else from_point[1]
         to_x = to_point.x if hasattr(to_point, 'x') else to_point[0]
@@ -685,7 +675,7 @@ class PassPredictor:
         sigma = optimal_params.get('sigma', 0.05) if optimal_params else 0.05
         seuil_trajectoire = optimal_params.get('seuil_trajectoire', 0.02) if optimal_params else 0.02
         
-        # Calcul de distance entre les points
+        # Distance computation between the points
         distance_passe = np.sqrt((from_x - to_x)**2 + (from_y - to_y)**2)
         
         features = {}
@@ -721,25 +711,25 @@ class PassPredictor:
         return features
      
 class ShotPredictor:
-    """Classe pour prédire les chances de but en utilisant le modèle GoAloneSimplePredictor"""
+    """Class to predict goal chances using the GoAloneSimplePredictor model"""
     
     @staticmethod
     # def predict_probability(ball_zone: Zone, goal: Zone = None, defenders: List[Player] = None) -> float:
     #     """
-    #     Prédit la probabilité de marquer depuis une zone en utilisant le GoAloneSimplePredictor
+    #     Predict the probability of scoring from a zone using the GoAloneSimplePredictor
     #     
     #     Args:
-    #         ball_zone: Zone où se trouve le ballon
-    #         goal: Zone du but (par défaut 1.0, 0.5)
-    #         defenders: Liste des défenseurs à considérer
+    #         ball_zone: Zone where the ball is
+    #         goal: Goal zone (default 1.0, 0.5)
+    #         defenders: List of defenders to consider
     #         
     #     Returns:
-    #         float: Probabilité de marquer un but
+    #         float: Probability of scoring a goal
     #     """
     #     if goal is None:
     #         goal = Zone(1.0, 0.5)
     #         
-    #     # Si aucun défenseur n'est fourni, utiliser l'approche simplifiée basée sur la distance
+    #     # If no defender is provided, use the simplified distance-based approach
     #     if defenders is None or len(defenders) == 0:
     #         distance_to_goal = ball_zone.distance_to(goal)
     #         
@@ -750,10 +740,10 @@ class ShotPredictor:
     #         else:
     #             return 0.3
     #     
-    #     # Convertir les positions des défenseurs en format attendu par GoAloneSimplePredictor
+    #     # Convert the defender positions to the format expected by GoAloneSimplePredictor
     #     defenders_coords = [(d.position.x, d.position.y) for d in defenders]
     #     
-    #     # Utiliser le prédicteur GoAloneSimplePredictor
+    #     # Use the GoAloneSimplePredictor
     #     result = predictor.predict_success_probability(
     #         player_x=ball_zone.x,
     #         player_y=ball_zone.y,
@@ -762,7 +752,7 @@ class ShotPredictor:
     #         goal_y=goal.y
     #     )
         
-        # Retourner la probabilité calculée
+        # Return the computed probability
         # return result['probability']
 
     def predict_probability(ball_zone: Zone, goal: Zone = None, defenders: List[Player] = None) -> float:
@@ -776,7 +766,7 @@ class ShotPredictor:
         return result
 
 class GoalThreatCalculator:
-    """Classe principale pour calculer la menace de but"""
+    """Main class to compute the goal threat"""
     _instance = None
     
     @classmethod
@@ -794,47 +784,47 @@ class GoalThreatCalculator:
         self.shot_predictor = ShotPredictor()
 
     def calculate_threat(self, game_state: GameState, passes_remaining: int = 3):
-        """Point d'entrée pour le calcul de la menace de but"""
+        """Entry point for the goal threat computation"""
         return self._calculate_threat_recursive(game_state, passes_remaining, ())
 
     def _calculate_threat_recursive(self, game_state: GameState, passes_remaining: int, path):
-        """Calcule la menace de but de manière récursive
+        """Compute the goal threat recursively
         Args:
-            game_state: État actuel du jeu
-            passes_remaining: Nombre de passes restantes à considérer
-            path: Chemin parcouru jusqu'ici
+            game_state: Current game state
+            passes_remaining: Number of remaining passes to consider
+            path: Path traversed so far
             
         Returns:
-            float: Valeur de menace de but
-            Tuple[Zone]: Chemin optimal pour atteindre la menace de but
+            float: Goal threat value
+            Tuple[Zone]: Optimal path to reach the goal threat
         """
         current_zone = game_state.ball_zone
         optimal_path = (current_zone,)
         
-        # Calculer la probabilité de marquer directement
+        # Compute the probability of scoring directly
         shot_prob = self.shot_predictor.predict_probability(
             game_state.ball_zone, 
             game_state.goal, 
             game_state.defenders
         )
         
-        # Si plus de passes possibles ou dans une zone de tir optimale, tirer
+        # If no more passes possible or in an optimal shooting zone, shoot
         if passes_remaining == 0 or game_state.ball_zone in truth_zone:
             return shot_prob, optimal_path
         else:
-            # Initialiser avec la valeur de tir direct
+            # Initialize with the direct shot value
             threat = shot_prob
             optimal_path = (current_zone,)
             
-            # Explorer les zones accessibles
+            # Explore the reachable zones
             reachable_zones = self.terrain.get_reachable_zones(game_state.ball_zone)
             for target_zone in reachable_zones:
-                # Échantillonner des points dans la zone cible
+                # Sample points in the target zone
                 candidate_points = self.terrain.sample_points_in_zone(target_zone, num_samples=4)
                 best_point = None
                 best_pass_prob = 0.0
                 
-                # Trouver le meilleur point pour la passe
+                # Find the best point for the pass
                 for point in candidate_points:
                     pass_prob = self.pass_predictor.predict_probability(game_state.ball_zone, point, game_state)
                     if pass_prob > best_pass_prob:
@@ -842,7 +832,7 @@ class GoalThreatCalculator:
                         best_point = point
 
                 if best_point:
-                    # Générer des configurations après la passe
+                    # Generate configurations after the pass
                     configurations = self.config_generator.generate_configurations(
                         game_state, 
                         target_zone, 
@@ -851,7 +841,7 @@ class GoalThreatCalculator:
                         num_samples=3
                     )
 
-                    # Explorer les configurations possibles
+                    # Explore the possible configurations
                     for config in configurations:
                         future_threat, future_path = self._calculate_threat_recursive(
                             config, 
@@ -860,7 +850,7 @@ class GoalThreatCalculator:
                         )
                         total_threat = best_pass_prob * future_threat
                         
-                        # Mettre à jour si meilleure menace trouvée
+                        # Update if a better threat is found
                         if total_threat > threat:
                             threat = total_threat
                             optimal_path = (current_zone,) + future_path
@@ -872,10 +862,10 @@ class GoalThreatCalculator:
                 defenders_position: List[Tuple[float, float]], 
                 passes_restantes: int = 2) -> Tuple[float, List]:
         """
-        Interface simplifiée pour calculer la menace de but et le chemin optimal
+        Simplified interface to compute the goal threat and the optimal path
         
         Returns:
-            Tuple[float, List]: (valeur de menace, chemin optimal)
+            Tuple[float, List]: (threat value, optimal path)
         """
         game_state = GameState.from_positions(ball_zone, teammates_position, defenders_position)
         return self.calculate_threat(game_state, passes_restantes)

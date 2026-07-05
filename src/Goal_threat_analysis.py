@@ -11,11 +11,11 @@ threat_calculator = GoalThreatCalculator()
 
 def flip_positions(positions: list, pitch_length: float = 1.0, pitch_width: float = 1.0) -> list:
     """
-    Renverse les positions des joueurs sur le terrain selon x et y.
-    positions : liste de tuples (x, y)
-    pitch_length : longueur du terrain (par défaut 1.0)
-    pitch_width  : largeur du terrain (par défaut 1.0)
-    Retourne : liste de tuples (x_flipped, y_flipped)
+    Flips the players' positions on the pitch along x and y.
+    positions : list of (x, y) tuples
+    pitch_length : pitch length (default 1.0)
+    pitch_width  : pitch width (default 1.0)
+    Returns : list of (x_flipped, y_flipped) tuples
     """
     return [(pitch_length - x, pitch_width - y) for x, y in positions]
 
@@ -24,30 +24,30 @@ def extract_shots_and_preceding_passes(events, n_preceding=2):
     Extracts each SHOT and up to `n_preceding` preceding PASS events.
     
     Parameters:
-        events (pd.DataFrame): DataFrame contenant vos événements (avec colonne 'Type' et 'Team').
-        n_preceding (int): nombre d’événements précédents à tester (défaut = 2).
+        events (pd.DataFrame): DataFrame containing your events (with 'Type' and 'Team' columns).
+        n_preceding (int): number of preceding events to test (default = 2).
     
     Returns:
-        pd.DataFrame: lignes correspondant aux tirs et aux passes les précédant (le cas échéant),
-                      avec la colonne 'Team' préservée.
+        pd.DataFrame: rows corresponding to the shots and their preceding passes (if any),
+                      with the 'Team' column preserved.
     """
-    # Liste qui accumulera les Series à concaténer
+    # List that will accumulate the Series to concatenate
     rows = []
-    # Indices (positions) de tous les SHOT
+    # Indices (positions) of all SHOT events
     shot_positions = events.index[events['Type'] == 'SHOT'].tolist()
     
     for pos in shot_positions:
-        # Pour chaque offset de la fenêtre [pos-n_preceding ... pos]
-        for offset in range(n_preceding, -1, -1):  # ex. [2, 1, 0]
+        # For each offset in the window [pos-n_preceding ... pos]
+        for offset in range(n_preceding, -1, -1):  # e.g. [2, 1, 0]
             i = pos - offset
-            # Vérifie qu'on reste dans l’intervalle valide
+            # Check that we stay within the valid range
             if i >= 0 and i < len(events):
                 evt = events.iloc[i]
-                # On prend l’événement s’il s’agit d’un PASS (précédent) ou du SHOT lui‑même
+                # Take the event if it is a (preceding) PASS or the SHOT itself
                 if offset == 0 or evt['Type'] == 'PASS':
                     rows.append(evt)
                     
-    # Reconstruction d’un DataFrame et remise de l’index à zéro
+    # Rebuild a DataFrame and reset the index
     result = pd.DataFrame(rows).reset_index(drop=True)
     return result
 
@@ -58,19 +58,19 @@ df_away = pd.read_csv(csv_away, header=2)
 
 def configuration_jeu(idx_frame, csv_home, csv_away):
 
-    # Filtrer la ligne correspondant à la frame voulue
+    # Filter the row corresponding to the desired frame
     home_row = df_home[df_home['Frame'] == idx_frame]
     away_row = df_away[df_away['Frame'] == idx_frame]
 
     home_pos = []
     away_pos = []
 
-    # Pour chaque joueur home
+    # For each home player
     if not home_row.empty:
         for col in df_home.columns:
             if col.startswith('Player'):
                 col_idx = df_home.columns.get_loc(col)
-                # La colonne Y est juste après
+                # The Y column comes right after
                 if col_idx + 1 < len(df_home.columns):
                     y_col = df_home.columns[col_idx + 1]
                     x = home_row.iloc[0][col]
@@ -78,7 +78,7 @@ def configuration_jeu(idx_frame, csv_home, csv_away):
                     if pd.notna(x) and pd.notna(y):
                         home_pos.append((float(x), float(y)))
 
-    # Pour chaque joueur away
+    # For each away player
     if not away_row.empty:
         for col in df_away.columns:
             if col.startswith('Player'):
@@ -93,7 +93,7 @@ def configuration_jeu(idx_frame, csv_home, csv_away):
     return home_pos, away_pos
 
 
-# Exemple d’utilisation
+# Example usage
 if __name__ == "__main__":
     df = pd.read_csv(str(METRICA_DIR / "Game_2_Metrica" / "Sample_Game_2_RawEventsData.csv"))
     df_filtered = extract_shots_and_preceding_passes(df)

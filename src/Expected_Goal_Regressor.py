@@ -5,7 +5,7 @@ import pandas as pd
 from config import MODELS_DIR
 
 def nb_adv_trajectoire_coords(x, y, adv_positions, goal_x=1, goal_y=0.5, seuil_trajectoire=0.016622456647036446):
-    """Version améliorée qui accepte directement les coordonnées"""
+    """Improved version that accepts coordinates directly"""
     passeur = np.array([x, y])
     cible = np.array([goal_x, goal_y])
 
@@ -61,10 +61,10 @@ class GoAloneXGBPredictor:
     def __init__(self, model_path=None, metadata_path=None):
         model_path = str(model_path or MODELS_DIR / "best_xg_model_xgb.json")
         metadata_path = str(metadata_path or MODELS_DIR / "xg_model_metadata.pkl")
-        # Charger le modèle XGBoost
-        self.model = XGBClassifier()  # ou XGBRegressor selon ton modèle
+        # Load the XGBoost model
+        self.model = XGBClassifier()  # or XGBRegressor depending on the model
         self.model.load_model(model_path)
-        # Charger le scaler et les features
+        # Load the scaler and the features
         with open(metadata_path, "rb") as f:
             metadata = pickle.load(f)
         self.scaler = metadata["scaler"]
@@ -100,7 +100,7 @@ class GoAloneXGBPredictor:
         angle = np.arccos(cos_angle)
         return angle
 
-# Exemple d'utilisation
+# Example usage
 if __name__ == "__main__":
     predictor = GoAloneXGBPredictor()
     ball_pos = (0.9, 0.5)

@@ -6,7 +6,7 @@ from typing import List, Tuple, Dict, Any
 import os
 from pathlib import Path
 import time
-# Importer les fonctions de Goal_threat_classes
+# Import the functions from Goal_threat_classes
 INTERVAL = 15
 
 from Goal_threat_classes import GoalThreatCalculator, GameState
@@ -14,11 +14,11 @@ from config import METRICA_DIR, FIGURES_DIR
 
 def flip_positions(positions: list, pitch_length: float = 1.0, pitch_width: float = 1.0) -> list:
     """
-    Renverse les positions des joueurs sur le terrain selon x et y.
-    positions : liste de tuples (x, y)
-    pitch_length : longueur du terrain (par défaut 1.0)
-    pitch_width  : largeur du terrain (par défaut 1.0)
-    Retourne : liste de tuples (x_flipped, y_flipped)
+    Flips the players' positions on the pitch along x and y.
+    positions : list of (x, y) tuples
+    pitch_length : pitch length (default 1.0)
+    pitch_width  : pitch width (default 1.0)
+    Returns : list of (x_flipped, y_flipped) tuples
     """
     return [(pitch_length - x, pitch_width - y) for x, y in positions]
 
@@ -26,41 +26,41 @@ import bisect
 
 def _estimate_ball_possession(events_data, frame):
     """
-    Estime la possession du ballon pour chaque frame de `frames`,
-    et renvoie l'équipe en possession.
+    Estimates ball possession for each frame of `frames`,
+    and returns the team in possession.
     """
-    # 1) Trier une bonne fois pour toutes les événements sur Start Frame
+    # 1) Sort the events once and for all on Start Frame
     events = (
         events_data
         .sort_values('Start Frame')
         .reset_index(drop=True)
     )
-    # Extraire le tableau de start_frames pour bisect
+    # Extract the start_frames array for bisect
     start_frames = events['Start Frame'].tolist()
 
-    # 2) Trouver l'index du dernier événement dont start_frame <= f
+    # 2) Find the index of the last event whose start_frame <= f
     idx = bisect.bisect_right(start_frames, frame) - 1
 
     row = events.iloc[idx]
     team  = row['Team']
     typ   = row['Type']
-    # Correction ici :
+    # Fix here:
     subtype_val = row['Subtype']
     if pd.isna(subtype_val):
         subtype = ''
     else:
         subtype = str(subtype_val).upper()
-    # 3) Appliquer votre logique métier pour déterminer qui a la balle
+    # 3) Apply the business logic to determine who has the ball
     if typ == 'BALL LOST' or (typ == 'CHALLENGE' and subtype.endswith('LOST')):
-        # perte de balle → l’adversaire
+        # ball lost -> the opponent
         poss = 'Home' if team == 'Away' else 'Away'
 
     elif typ == 'RECOVERY' or (typ == 'CHALLENGE' and subtype.endswith('WON')):
-        # récupération ou duel gagné → l'équipe du row
+        # recovery or duel won -> the team in the row
         poss = team
 
     else:
-        # passe, set piece, etc. → on reste avec l'équipe du row
+        # pass, set piece, etc. -> keep the team in the row
         poss = team
     print(f"Possession estimée pour frame {frame}: {poss} (Team: {team}, Type: {typ}, Subtype: {subtype})")
     return poss
@@ -70,101 +70,101 @@ import pandas as pd
 
 def is_ball_controlled(events_data, current_frame):
     """
-    Détermine si le ballon est contrôlé par un joueur à la frame spécifiée
-    en analysant le dernier événement enregistré.
+    Determines whether the ball is controlled by a player at the given frame
+    by analyzing the last recorded event.
     
     Args:
-        events_data: DataFrame contenant les événements du match
-        current_frame: Numéro de la frame à vérifier
+        events_data: DataFrame containing the match events
+        current_frame: Number of the frame to check
         
     Returns:
         tuple: (is_controlled, team_possessing)
-            - is_controlled (bool): True si le ballon est contrôlé, False sinon
+            - is_controlled (bool): True if the ball is controlled, False otherwise
     """
-    # Trier les événements sur Start Frame (si pas déjà fait)
+    # Sort the events on Start Frame (if not already done)
     events = events_data.sort_values('Start Frame').reset_index(drop=True)
     
-    # Extraire le tableau de start_frames pour recherche rapide
+    # Extract the start_frames array for fast lookup
     start_frames = events['Start Frame'].tolist()
     
-    # Trouver l'index du dernier événement dont start_frame <= current_frame
+    # Find the index of the last event whose start_frame <= current_frame
     idx = bisect.bisect_right(start_frames, current_frame) - 1
     
     if idx < 0:
         return False, None
     
-    # Récupérer le dernier événement pertinent
+    # Get the last relevant event
     row = events.iloc[idx]
     
-    # Vérifier si la frame actuelle se trouve entre le début et la fin de l'événement
-    # Si End Frame est NaN ou supérieur à la frame actuelle, le ballon est toujours en jeu
+    # Check whether the current frame is between the event's start and end
+    # If End Frame is NaN or greater than the current frame, the ball is still in play
     if pd.isna(row['End Frame']) or row['End Frame'] > current_frame:   
         return False
     else:
-        # Le ballon n'est pas contrôlé (entre deux événements, en vol, etc.)
+        # The ball is not controlled (between two events, in flight, etc.)
         return True
 
 def _convert_metrica_coordinates(positions, metrica_length=1.0, metrica_width=1.0,
                                 target_length=105, target_width=68):
     """
-    Convertit les coordonnées Metrica (normalisées 0-1) vers des coordonnées de terrain standard
+    Converts Metrica coordinates (normalized 0-1) to standard pitch coordinates
     """
     positions_converted = positions.copy()
     
-    # Metrica utilise des coordonnées normalisées (0,1)
-    # Convertir vers les dimensions du terrain
-    positions_converted[:, :, 0] *= target_length  # X (longueur)
-    positions_converted[:, :, 1] *= target_width   # Y (largeur)
+    # Metrica uses normalized coordinates (0,1)
+    # Convert to the pitch dimensions
+    positions_converted[:, :, 0] *= target_length  # X (length)
+    positions_converted[:, :, 1] *= target_width   # Y (width)
     
     return positions_converted
 
 def extract_metrica_data(game_folder, max_frames=500, interval=100, convert_coordinates=False):
     """
-    Extrait les données Metrica Sports et les prépare pour animation_match
+    Extracts the Metrica Sports data and prepares it for animation_match
     
     Args:
-        game_folder: Chemin vers le dossier contenant les données Metrica
-        max_frames: Nombre maximum de frames à extraire (None = toutes)
-        convert_coordinates: Si True, convertit les coordonnées vers un format standard
+        game_folder: Path to the folder containing the Metrica data
+        max_frames: Maximum number of frames to extract (None = all)
+        convert_coordinates: If True, convert coordinates to a standard format
         
     Returns:
-        dict avec:
-        - positions: array (frames, total_players+1, 2) compatible avec animation_match
-        - ball_carrier_team: array indiquant quelle équipe a le ballon
-        - events_data: DataFrame des événements
-        - dt: intervalle de temps entre frames
-        - metadata: informations sur les équipes et joueurs
+        dict with:
+        - positions: array (frames, total_players+1, 2) compatible with animation_match
+        - ball_carrier_team: array indicating which team has the ball
+        - events_data: DataFrame of the events
+        - dt: time interval between frames
+        - metadata: information about the teams and players
     """
     game_path = Path(game_folder)
     
-    # Détecter le numéro du jeu depuis le nom du dossier
+    # Detect the game number from the folder name
     if "Game_1" in str(game_path):
         game_num = "1"
     elif "Game_2" in str(game_path):
         game_num = "2"
     else:
-        # Essayer d'extraire depuis le nom du dossier
-        game_num = "1"  # Par défaut
-      # Construire les chemins des fichiers
+        # Try to extract it from the folder name
+        game_num = "1"  # Default
+      # Build the file paths
     events_file = game_path / f"Sample_Game_{game_num}_RawEventsData.csv"
     home_file = game_path / f"Sample_Game_{game_num}_RawTrackingData_Home_Team.csv"
     away_file = game_path / f"Sample_Game_{game_num}_RawTrackingData_Away_Team.csv"
     
     print(f"🔄 Extraction des données Metrica depuis {game_folder}...")
     
-    # Vérifier l'existence des fichiers
+    # Check that the files exist
     if not all([events_file.exists(), home_file.exists(), away_file.exists()]):
         print(f"❌ Fichiers manquants dans {game_folder}")
         return None
     
     try:
-        # Charger les données CSV avec les bonnes options
-        # Les fichiers Metrica ont 3 lignes d'en-têtes, on utilise la 3ème
+        # Load the CSV data with the right options
+        # Metrica files have 3 header rows, we use the 3rd one
         home_data = pd.read_csv(home_file, header=2)
         away_data = pd.read_csv(away_file, header=2)
         events_data = pd.read_csv(events_file)
         print(f"✅ Données chargées: {len(home_data)} frames")
-          # Limiter le nombre de frames si demandé
+          # Limit the number of frames if requested
         if max_frames:
             home_data = home_data.head(max_frames)
             away_data = away_data.head(max_frames)
@@ -174,11 +174,11 @@ def extract_metrica_data(game_folder, max_frames=500, interval=100, convert_coor
         away_data = away_data.iloc[::interval].reset_index(drop=True)
         frames = len(home_data)
 
-        # Identifier les colonnes de joueurs (format alterné: PlayerX, Unnamed)
+        # Identify the player columns (alternating format: PlayerX, Unnamed)
         home_player_ids = []
         away_player_ids = []
         
-        # Les colonnes sont organisées: Player, Unnamed (Y), Player, Unnamed (Y)...
+        # The columns are organized as: Player, Unnamed (Y), Player, Unnamed (Y)...
         for col in home_data.columns:
             if col.startswith('Player'):
                 home_player_ids.append(col)
@@ -187,25 +187,25 @@ def extract_metrica_data(game_folder, max_frames=500, interval=100, convert_coor
             if col.startswith('Player'):
                 away_player_ids.append(col)
         
-        # Filtrer les joueurs qui ont des données valides
+        # Keep the players that have valid data
         home_player_ids = [p for p in home_player_ids if not home_data[p].isna().all()]
         away_player_ids = [p for p in away_player_ids if not away_data[p].isna().all()]
         
         total_players = len(home_player_ids) + len(away_player_ids)
         print(f"👥 Joueurs détectés - Home: {len(home_player_ids)}, Away: {len(away_player_ids)}")
         
-        # Initialiser le tableau des positions (frames, joueurs+ballon, 2)
+        # Initialize the positions array (frames, players+ball, 2)
         positions = np.full((frames, total_players + 1, 2), np.nan)
         ball_carrier_team = np.zeros(frames, dtype=int)  # 0 = Home, 1 = Away
         ball_carrier_liste = []
-        # Extraire les positions frame par frame
+        # Extract the positions frame by frame
         for frame_idx in range(frames):
             player_idx = 0
             
-            # Joueurs Home - Les colonnes Y suivent immédiatement les colonnes X
+            # Home players - the Y columns immediately follow the X columns
             for player_id in home_player_ids:
                 x_col = player_id
-                # Trouver la colonne Y (Unnamed qui suit immédiatement)
+                # Find the Y column (Unnamed that immediately follows)
                 x_col_idx = home_data.columns.get_loc(x_col)
                 y_col_idx = x_col_idx + 1
                 
@@ -221,7 +221,7 @@ def extract_metrica_data(game_folder, max_frames=500, interval=100, convert_coor
                 
                 player_idx += 1
             
-            # Joueurs Away
+            # Away players
             for player_id in away_player_ids:
                 x_col = player_id
                 x_col_idx = away_data.columns.get_loc(x_col)
@@ -239,11 +239,11 @@ def extract_metrica_data(game_folder, max_frames=500, interval=100, convert_coor
                 
                 player_idx += 1
             
-            # Dernière ligne pour le ballon (Metrica utilise la dernière colonne pour le ballon)
-            # Position du ballon (dernière position dans le tableau)
+            # Last row for the ball (Metrica uses the last column for the ball)
+            # Ball position (last position in the array)
             ball_x, ball_y = np.nan, np.nan
 
-            # Chercher dans home_data
+            # Look in home_data
             if 'Ball' in home_data.columns:
                 ball_col_idx = home_data.columns.get_loc('Ball')
                 ball_y_col_idx = ball_col_idx + 1
@@ -254,7 +254,7 @@ def extract_metrica_data(game_folder, max_frames=500, interval=100, convert_coor
                     if pd.notna(ball_x_home) and pd.notna(ball_y_home):
                         ball_x, ball_y = float(ball_x_home), float(ball_y_home)
 
-            # Si la position du ballon n'est pas valide, chercher dans away_data
+            # If the ball position is not valid, look in away_data
             if (not pd.notna(ball_x)) or (not pd.notna(ball_y)):
                 if 'Ball' in away_data.columns:
                     ball_col_idx = away_data.columns.get_loc('Ball')
@@ -272,10 +272,10 @@ def extract_metrica_data(game_folder, max_frames=500, interval=100, convert_coor
             positions[frame_idx, -1, 1] = ball_y
             print(f"Coordonnées de la balle chargées : ({positions[frame_idx, -1, 0]}, {positions[frame_idx, -1, 1]})")
 
-        # Intervalle de temps (Metrica utilise généralement 25 FPS)
-        dt = 0.04  # 1/25 secondes
+        # Time interval (Metrica usually uses 25 FPS)
+        dt = 0.04  # 1/25 seconds
         
-        # Métadonnées
+        # Metadata
         metadata = {
             'game_number': game_num,
             'total_frames': frames,
@@ -304,23 +304,23 @@ def extract_metrica_data(game_folder, max_frames=500, interval=100, convert_coor
 def plot_goal_threat(data: dict,
                      interval: int = 1):
     """
-    Trace l'évolution du coefficient de menace pour chaque équipe
-    en échantillonnant toutes les `interval` frames.
+    Plots the evolution of the threat coefficient for each team
+    by sampling every `interval` frames.
 
-    data doit contenir :
+    data must contain:
       - positions           : np.ndarray de forme (n_frames, n_players+1, 2)
-                              (les n_players premières lignes = joueurs,
-                               la dernière = ballon)
-      - ball_carrier_team   : array-like de longueur n_frames,
-                              contenant 'home'/'away'/'neutral'
-      - dt                  : float, pas de temps entre deux frames (en s)
+                              (the first n_players rows = players,
+                               the last one = ball)
+      - ball_carrier_team   : array-like of length n_frames,
+                              containing 'home'/'away'/'neutral'
+      - dt                  : float, time step between two frames (in s)
     """
     pos         = data['positions']
     carrier     = data['ball_carrier_team']
     dt          = data['dt']
 
     n_frames, n_entities, _ = pos.shape
-    n_players = n_entities - 1   # on considère que la dernière entité = ballon
+    n_players = n_entities - 1   # we consider the last entity to be the ball
     threat_calculator = GoalThreatCalculator()
     times      = []
     threat_h   = []
@@ -334,23 +334,23 @@ def plot_goal_threat(data: dict,
             continue
         print(f"Frame {frame_idx} : ballon contrôlé, calcul de la menace")
         print(f"Temps de calcul: {time.time() - start:.2f}s")
-        # 1) extraire positions joueurs et ballon
+        # 1) extract player and ball positions
         frame_pos   = pos[frame_idx]          # (n_players+1, 2)
-        ball_pos    = frame_pos[-1]           # dernier = ballon
-        players_pos = frame_pos[:n_players]   # premiers = joueurs
-        home_players = players_pos[:n_players//2]  # joueurs de l'équipe home
-        away_players = players_pos[n_players//2:n_players]  # joueurs de l'équipe away
+        ball_pos    = frame_pos[-1]           # last = ball
+        players_pos = frame_pos[:n_players]   # first = players
+        home_players = players_pos[:n_players//2]  # home team players
+        away_players = players_pos[n_players//2:n_players]  # away team players
         print(ball_pos)
         if np.isnan(ball_pos).any():
             continue
-        # 2) construire les listes des positions des joueurs home et away
+        # 2) build the lists of home and away player positions
         home_positions = [tuple(home_players[i]) for i in range(len(home_players))]
         away_positions = [tuple(away_players[i]) for i in range(len(away_players))]
 
-        # 3) déterminer la possession
+        # 3) determine possession
         possession = _estimate_ball_possession(data['events_data'], frame_idx*INTERVAL)
         print(f"Possession pour : {possession}")
-        # 4) calcul du goal threat
+        # 4) compute the goal threat
         if possession == 'Home':
             away_positions = flip_positions(away_positions)
             home_positions = flip_positions(home_positions)
@@ -362,12 +362,12 @@ def plot_goal_threat(data: dict,
             th_h = 0
             game_state = GameState.from_positions(ball_pos, away_positions, home_positions)
             th_a = threat_calculator.calculate_threat(game_state, 2)[0]
-        # 5) stocker
+        # 5) store
         times.append(frame_idx * dt * INTERVAL)
         threat_h.append(th_h)
         threat_a.append(th_a)
 
-    # tracé final
+    # final plot
     plt.figure(figsize=(10, 4))
     plt.plot(times, threat_h, label='Home Threat', color='blue')
     plt.xlabel('Time (s)')
@@ -405,11 +405,11 @@ def plot_goal_threat(data: dict,
     print(f"  - Away: Moyenne={mean_away:.2f}, Variance={variance_away:.2f}, Quantile 95={quantile_95_away:.2f}, Percentiles={percentile_away}")
 
     print("Statistiques de menace calculées (en enlevant les 0):")
-    # Convertir en array si besoin
+    # Convert to array if needed
     h = np.array(threat_h)
     a = np.array(threat_a)
 
-    # Ne garder que les valeurs non nulles
+    # Keep only the non-zero values
     h_nz = h[h != 0]
     a_nz = a[a != 0]
     mean_home = np.mean(threat_h)
@@ -430,7 +430,7 @@ def plot_goal_threat(data: dict,
 
 
 if __name__ == "__main__":
-    # Exemple d'utilisation
+    # Example usage
     game_folder = str(METRICA_DIR / "Game_2_Metrica")
 
     data = extract_metrica_data(game_folder, max_frames=15000, interval=INTERVAL, convert_coordinates=False)
