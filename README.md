@@ -35,7 +35,7 @@ $$
 GT(n, r) =
 \begin{cases}
 \mathrm{go\_alone}(n, r) & \text{if } n \text{ is a Truth Zone,} \\
-\max\!\left( \mathrm{go\_alone}(n, r),\ \displaystyle\max_{m,\, r'}\ p(n, m, r')\cdot GT(m, r') \right) & \text{otherwise.}
+\max\\left( \mathrm{go\_alone}(n, r),\ \displaystyle\max_{m,\, r'}\ p(n, m, r')\cdot GT(m, r') \right) & \text{otherwise.}
 \end{cases}
 $$
 
