@@ -9,12 +9,12 @@ It accompanies the paper *"Goal Threat in Football: How to Quantify the Threat o
 in Football"* (Azéma & Toyoizumi).
 
 <p align="center">
-  <img src="results/goal_threat_maps/goal_threat_visualizations/situation_16_Away_Pass.png" width="80%" alt="Goal Threat evaluated on a real frame, with the optimal 2-pass path highlighted">
+  <img src="results/goal_threat_maps/goal_threat_visualizations/situation_43_Home_Pass.png" width="80%" alt="Goal Threat evaluated on a real frame, with the optimal 2-pass path highlighted">
 </p>
 <p align="center">
   <em>GT on a real frame (Metrica tracking data). The model searches every reachable zone and player
   repositioning and returns the optimal action — here a 2-pass sequence (ball → best receiver →
-  highest-threat target) with GT = 0.57.</em>
+  highest-threat target) with GT = 0.60.</em>
 </p>
 
 ## What makes GT different
