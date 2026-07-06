@@ -8,6 +8,15 @@ that captures both the immediate danger of shooting and the future danger create
 It accompanies the paper *"Goal Threat in Football: How to Quantify the Threat of Conceding a Goal
 in Football"* (Azéma & Toyoizumi).
 
+<p align="center">
+  <img src="results/goal_threat_maps/goal_threat_visualizations/situation_16_Away_Pass.png" width="80%" alt="Goal Threat evaluated on a real frame, with the optimal 2-pass path highlighted">
+</p>
+<p align="center">
+  <em>GT on a real frame (Metrica tracking data). The model searches every reachable zone and player
+  repositioning and returns the optimal action — here a 2-pass sequence (ball → best receiver →
+  highest-threat target) with GT = 0.57.</em>
+</p>
+
 ## What makes GT different
 
 | Model | Key strength | Key weakness |
@@ -19,15 +28,20 @@ in Football"* (Azéma & Toyoizumi).
 
 ## Method in a nutshell
 
-The pitch is discretized into a **15 × 10 grid** (150 zones). For a ball in zone `n` with player
-configuration `r`, GT is defined recursively:
+The pitch is discretized into a **15 × 10 grid** (150 zones). For a ball in zone $n$ with player
+configuration $r$, GT is defined recursively:
 
-```
-GT(n, r) = go_alone(n, r)                                               if n is a Truth Zone
-GT(n, r) = max( go_alone(n, r),
-                max over reachable zones m and player moves r'
-                    p(n, m, r') · GT(m, r') )                           otherwise
-```
+$$
+GT(n, r) =
+\begin{cases}
+\mathrm{go\_alone}(n, r) & \text{if } n \text{ is a Truth Zone,} \\[6pt]
+\max\!\left( \mathrm{go\_alone}(n, r),\ \displaystyle\max_{m,\, r'}\ p(n, m, r')\cdot GT(m, r') \right) & \text{otherwise.}
+\end{cases}
+$$
+
+Here the inner maximum ranges over all reachable zones $m$ and player repositionings $r'$. Intuitively,
+the threat of a position is the best of *shooting/dribbling now* versus *passing to another zone and
+recursing on the resulting position*.
 
 - **`p(n, m, r)`** — *pass success probability* from zone `n` to zone `m` given player positions,
   learned from StatsBomb data with engineered defensive-pressure / trajectory-interception features
@@ -41,6 +55,27 @@ GT(n, r) = max( go_alone(n, r),
 
 Evaluation uses the **Metrica Sports** tracking dataset, which is independent from the StatsBomb
 data used to train the pass model.
+
+## Example results
+
+**Pass-success surface `p(n, m, r)`.** For a fixed ball position, the pass model scores the success
+probability toward every other zone given the 22 player positions — high near unmarked teammates,
+low through defensive pressure. This is the surface the GT recursion maximizes over.
+
+<p align="center">
+  <img src="results/heatmaps/heatmap_surface_reparation.png" width="85%" alt="Pass-success probability heatmap from a fixed ball position given all player positions">
+</p>
+
+**Goal Threat over time.** Running GT frame-by-frame turns a match into two threat time-series (one
+per team). Peaks mark dangerous build-ups; the metric captures danger *before* a shot is ever taken,
+and swings between teams as possession and space change.
+
+<p align="center">
+  <img src="results/figures/goal_threat_evolution.png" width="85%" alt="Goal Threat of both teams over roughly one minute of play">
+</p>
+
+More per-action visualizations (optimal paths, GT maps, heatmaps) are generated under `results/` by
+the scripts in [Usage](#usage).
 
 ## Repository structure
 
